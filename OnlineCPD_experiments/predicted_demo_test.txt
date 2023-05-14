@@ -1,0 +1,11 @@
+0:Standart                          -1.07
+LowFP                             -6.56
+LowFN                              2.19
+Time_Delta              0 days 00:00:01
+Missed_CP                            21
+FPs                                  21
+True_Anomalies_Count                 23
+precision                      0.086957
+recall                         0.086957
+F1                             0.086957
+Name: 0, dtype: object
