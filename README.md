@@ -17,3 +17,10 @@ My point is to create an offline CPD algorithm:
   
 in progress...
 
+TO DO list:
+
+1. Refactoring && Restructure dir
+2. Update SST and Kalman Filter models
+3. Update streamlit app
+4. Create Docker Image && CI
+5. Add some tests for models
