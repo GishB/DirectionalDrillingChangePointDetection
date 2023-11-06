@@ -40,13 +40,14 @@ class WindowSizeSelection:
         self.length_ts = len(time_series)
 
         if self.window_max is None:
-            self.window_max = int(len(time_series) / 5)
+            self.window_max = int(len(time_series) // 2)
 
         if self.window_min is None:
             self.window_min = 10
 
         if int(len(time_series) / 5) <= 200:
             self.window_max = len(time_series)
+            self.window_min = 3
 
     def autocorrelation(self):
         """
@@ -189,7 +190,8 @@ class WindowSizeSelection:
         distance_k = sum(np.log10(abs(m_values - np.mean(m_values))))
         return distance_k
 
-    def top_local_minimum(self, distance_scores):
+    @staticmethod
+    def top_local_minimum(distance_scores):
         """
         Find a list of local minimum for multi_window_finder method
 

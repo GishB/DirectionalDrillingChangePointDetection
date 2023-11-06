@@ -1,11 +1,11 @@
 import sys
 import os
-sys.path.append(os.path.abspath(".."))
+sys.path.append(os.path.abspath("../../.."))
 
 import libs_cpd
-import datareader.data as dtest
+import utils.data as dtest
 import models.kalman as kalman
-import create_report as crtest
+from utils import create_report as crtest
 import optimization.functions as optf
 
 
