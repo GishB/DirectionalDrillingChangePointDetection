@@ -68,8 +68,7 @@ class DrillingData:
             raw_data = self.load_raw_data(url=self.url_dict.get("237G"))
         else:
             raw_data = self.load_raw_data(url=self.url_dict.get(self.dataset_name))
+            if self.dataset_name in ["A684G", "A564G"]:
+                raw_data = raw_data[raw_data[raw_data['Unnamed: 0']] == self.dataset_name]
         return self.transform_data(raw_data)
 
-#     url = "https://storage.yandexcloud.net/cloud-files-public/dataframe.csv"
-#     df = libs_cpd.pd.read_csv(libs_cpd.StringIO(libs_cpd.requests.get(url).content.decode('utf-8')), sep='|')
-#      xxxAA684G or xxxAA564G
