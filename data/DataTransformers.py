@@ -46,13 +46,13 @@ class CloudDataTransformer:
 
     @staticmethod
     def take_expected_columns(df: pd.DataFrame) -> pd.DataFrame:
-        return df[["uR/h", "unitless", "m/hr", "ohmm", "ohmm.1", "CPs"]].reset_index(drop=True)
+        return df[["uR/h", "ohmm", "ohmm.6", "m/hr", "unitless", "CPs"]].reset_index(drop=True)
 
     @staticmethod
     def rename_column_special(df: pd.DataFrame) -> pd.DataFrame:
         return df.rename(columns={"uR/h": "GR",
                                   "ohmm": "Resist_short",
-                                  "ohmm.4": "Resist_long",
+                                  "ohmm.6": "Resist_long",
                                   "unitless": "LITHOLOGY",
                                   "m/hr": "DrillingSpeed"})
 
@@ -64,7 +64,7 @@ class CloudDataTransformer:
         """
         df = self.df
         if self.dataset_name in ["xxxAA684G", "xxxAA564G"]:
-            df = self.drop_nan_values(self.df)
+            df = self.replace_nan_values(df)
             df = self.add_expected_change_points(df)
             df = self.take_expected_columns(df)
             df = self.rename_column_special(df)
