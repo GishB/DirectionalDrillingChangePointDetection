@@ -23,14 +23,14 @@ class DrillingData:
             "229G": "https://storage.yandexcloud.net/cloud-files-public/229G_las_files.csv",
             "231G": "https://storage.yandexcloud.net/cloud-files-public/231G_las_files.csv",
             "237G": "https://storage.yandexcloud.net/cloud-files-public/237G_las_files.csv",
-            "A564G": "https://storage.yandexcloud.net/cloud-files-public/dataframe.csv",
-            "A684G": "https://storage.yandexcloud.net/cloud-files-public/dataframe.csv"
+            "xxxAA564G": "https://storage.yandexcloud.net/cloud-files-public/dataframe.csv",
+            "xxxAA684G": "https://storage.yandexcloud.net/cloud-files-public/dataframe.csv"
         }
         self.dataset_name = dataset_name
         self.sep = sep
-        if dataset_name not in ["default", "229G", "231G", "237G", "A684G", "A564G"]:
+        if dataset_name not in ["default", "229G", "231G", "237G", "xxxAA684G", "xxxAA564G"]:
             raise NameError("There is not such dataset name.")
-        if dataset_name in ["A684G", "A564G"]:
+        if dataset_name in ["xxxAA684G", "xxxAA564G"]:
             self.sep = "|"
 
     def load_raw_data(self, url: str) -> pd.DataFrame:
@@ -49,26 +49,11 @@ class DrillingData:
         """
         return pd.read_csv(StringIO(requests.get(url).content.decode('utf-8')), sep=self.sep)
 
-    @staticmethod
-    def transform_data(data: pd.DataFrame) -> pd.DataFrame:
-        """ Add time columns for selected dataframe.
-
-        Args:
-            data:
-
-        Returns:
-
-        """
-        data['time'] = np.arange(0, data.shape[0] * 1, 1).astype('datetime64[s]')
-        data = data.set_index('time')
-        return data
-
     def get(self) -> pd.DataFrame:
         if self.dataset_name == "default":
             raw_data = self.load_raw_data(url=self.url_dict.get("237G"))
         else:
             raw_data = self.load_raw_data(url=self.url_dict.get(self.dataset_name))
-            if self.dataset_name in ["A684G", "A564G"]:
-                raw_data = raw_data[raw_data[raw_data['Unnamed: 0']] == self.dataset_name]
-        return self.transform_data(raw_data)
-
+            if self.dataset_name in ["xxxAA684G", "xxxAA564G"]:
+                raw_data = raw_data[raw_data[raw_data.columns[0]] == self.dataset_name]
+        return raw_data.reset_index(drop=True)
