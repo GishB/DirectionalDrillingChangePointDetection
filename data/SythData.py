@@ -1,63 +1,174 @@
-import sys
-import os
-sys.path.append(os.path.abspath(".."))
-from utils import libs_cpd
+import numpy as np
+
+import pandas as pd
 
 
-class SythDataGenerator:
-    """SythDataGenerator class (SDG).
+class SythDataConstructor:
+    """ This is fundament class which should be used for any syth data generators.
 
-    This class helps to generate syth data for CPD experiments.
+    Notes:
+        length_data % cpu_numbers has to be equal 0!
 
-    Note:
-        At SDG class we have 1 group of function. It is step_rate_function which generate steps function with some noise.
-
-    Args:
-        number_steps: numbers of CPs.
-        length: size of 1D time series which you expect to get.
-        mess_rate: it is called np.random.randint where mess rate is std value for Gaussian distribution.
-        normalization: normalize or not output list of syth data.
-        savgol_filter: filter or not output list of syth data.
-
+    Attributes:
+        frequency: which freq should be used seconds, minutes, days.
+        length_data: just how many points should be generated.
+        cps_number: number of change points over generated data.
     """
+
     def __init__(self,
-                 number_steps: int = 1,
-                 length: int = 100,
-                 mess_rate: float = 0,
-                 normalization: bool = True,
-                 savgol: bool = False):
-    
-        self.number_steps = number_steps
-        self.length = length
-        self.mess_rate = mess_rate
-        self.normalization = normalization
-        self.savgol = savgol
-        
-    def step_rate_function(self, number_steps: int, length: int, mess_rate: float) -> list:
-        random_value = libs_cpd.np.random.randint(-length, length)
-        function = [self.gaussian_mess(x=random_value - libs_cpd.np.random.randint(-length, length), mess_rate=mess_rate, size=length // (number_steps + 1))\
-                    for w in range(number_steps+1)]
-        cps_list = [[0 for i in range(length//(number_steps+1)-1)]+[1] if w != number_steps\
-                    else [0 for i in range(length//(number_steps+1)-1)]+[0] for w in range(number_steps+1)]
-        return list(libs_cpd.chain.from_iterable(function)), list(libs_cpd.chain.from_iterable(cps_list))
+                 white_noise_level: str = "default",
+                 frequency: str = "s",
+                 length_data: int = 24 * 7 * 15 + 15,
+                 cps_number: int = 15):
+        self.frequency = frequency
+        self.length_data = length_data
+        self.cps_number = cps_number
 
-    def gaussian_mess(self, x: float, mess_rate: float, size: int) -> float:
-        return libs_cpd.np.random.normal(loc=x, scale=mess_rate, size=size)
+        self.white_mean = 0
+        if white_noise_level == "default":
+            self.white_std = 0.5
+        elif white_noise_level == "max":
+            self.white_std = 1
+        elif white_noise_level == "min":
+            self.white_std = 0.01
+        else:
+            raise NameError("Not implemented white noise level!")
 
-    def normalization_linear(self, x: list) -> list:
-        return (x-min(x))/(max(x)-min(x))
-    
-    def filter_Savgol(self, x: list, window_length: int) -> list:
-        return libs_cpd.savgol_filter(x, window_length, 3, mode='nearest')
-    
-    def wss(self, x: list) -> int:
-        return libs_cpd.WindowSizeSelection(time_series = x,
-                                            wss_algorithm = 'summary_statistics_subsequence').get_window_size()[0]
-    
-    def runner(self):
-        out, cps = self.step_rate_function(number_steps=self.number_steps, length=self.length, mess_rate=self.mess_rate)
-        if self.normalization:
-            out = self.normalization_linear(out)
-        if self.savgol:
-            out = self.filter_Savgol(out, self.wss(out))
-        return list(out), cps
+        if length_data % cps_number != 0:
+            raise ValueError("Not equal length of data and cpu_numbers expected from syth data!")
+
+    def generate_empty_df(self) -> pd.DataFrame:
+        """ Generate dataframe with timestamps.
+
+        Returns:
+            pandas dataframe with expected frequency and length
+        """
+        return pd.DataFrame(index=pd.date_range(start="10/07/1999",
+                                                periods=self.length_data,
+                                                freq=self.frequency,
+                                                normalize=True,
+                                                inclusive="both",
+                                                name="time"))
+
+    def generate_white_noise(self) -> np.array:
+        """ Generate random noise for your data.
+
+        Returns:
+            array of white noise based on expected length of data.
+        """
+        return np.random.normal(self.white_mean,
+                                self.white_std,
+                                size=self.length_data)
+
+    def generate_array_of_change_points(self) -> np.array:
+        """ Generate values which represent CPs over syth data.
+
+        Returns:
+            numpy array of int values where 1 is change point and 0 is default value.
+        """
+        cps_index = [i for i in range(self.length_data // self.cps_number,
+                                      self.length_data,
+                                      self.length_data // self.cps_number)]
+        dp = [0 if i not in cps_index else 1 for i in range(self.length_data)]
+        return np.array(dp)
+
+    def generate_data(self) -> np.array:
+        """ Generate syth data array
+
+        Returns:
+            expected syth data based on class idea.
+        """
+        ...
+
+    def get(self) -> pd.DataFrame:
+        """ Get syth data.
+
+        Returns:
+            pandas dataframe with syth data and time index.
+        """
+        ...
+
+
+class LinearSteps(SythDataConstructor):
+    def get_linear_array(self,
+                         beta_past: float,
+                         k_past: float,
+                         beta_mutation_coeff: float,
+                         k_mutation_coeff: float) -> tuple[np.array, float, float]:
+        """ Generate random linear array based on past observation
+
+        Notes:
+            beta_mutation_coeff as well as k_mutation_coeff should be defined based on expertise. These coefficients
+            help to connect nearest arrays.
+
+        Args:
+            beta_past: beta value in the past array.
+            k_past: k coefficient in the past array.
+            beta_mutation_coeff: treshold for beta deviation.
+            k_mutation_coeff: treshold for k coeff deviation.
+
+        Returns:
+            tuple of generated data and info for this generations beta and k_coeff.
+        """
+        beta = np.random.uniform(beta_past, 1)
+        k_coeff = np.random.uniform(k_past, 1)
+        if np.random.uniform(0, 1) > beta_mutation_coeff:
+            beta = np.random.uniform(-1, 1)
+        if np.random.uniform(0, 1) > k_mutation_coeff:
+            k_coeff = np.random.uniform(-1, 1)
+        dp = [k_coeff * x + beta for x in range(0, self.length_data // self.cps_number)]
+        return np.array(dp), beta, k_coeff
+
+    def generate_data(self, initial_beta: float = -0.01,
+                      initial_k: float = 0.2,
+                      beta_mutation_coeff: float = 0.8,
+                      k_mutation_coeff: float = 0.2) -> np.array:
+        dp = []
+        for steps in range(self.cps_number):
+            temp_info = self.get_linear_array(initial_beta,
+                                              initial_k,
+                                              beta_mutation_coeff,
+                                              k_mutation_coeff)
+            dp.extend(temp_info[0])
+            initial_beta = temp_info[1]
+            initial_k = temp_info[2]
+        return np.array(dp)
+
+    def get(self):
+        df = self.generate_empty_df()
+        df['x'] = np.add(self.generate_data(), self.generate_white_noise())
+        df['CPs'] = self.generate_array_of_change_points()
+        return df
+
+
+class SinusoidWaves(SythDataConstructor):
+    def get_sinusoid_array(self, beta_past: float, beta_mutation_coeff: float) -> tuple[np.array, float]:
+        """ Generate sinusoid waves over expected shape.
+
+        Args:
+            beta_past: beta coefficient for sinus wave.
+            beta_mutation_coeff: coeff for mutation operator.
+
+        Returns:
+            array of sinusoid data
+        """
+        beta_past = np.random.uniform(low=beta_past, high=2)
+        if np.random.uniform(low=0, high=1) > beta_mutation_coeff:
+            beta_past = np.random.uniform(low=-2, high=2)
+        x = np.linspace(start=0, stop= self.length_data // self.cps_number, num=self.length_data // self.cps_number)
+        return np.sin(x) * beta_past, beta_past
+
+    def generate_data(self, initial_beta: float = 0.5, beta_mutation_coeff: float = 0.5) -> np.array:
+        dp = []
+        for steps in range(self.cps_number):
+            temp_info = self.get_sinusoid_array(initial_beta,
+                                                beta_mutation_coeff)
+            dp.extend(temp_info[0])
+            initial_beta = temp_info[1]
+        return np.array(dp)
+
+    def get(self):
+        df = self.generate_empty_df()
+        df['x'] = np.add(self.generate_data(), self.generate_white_noise())
+        df['CPs'] = self.generate_array_of_change_points()
+        return df
