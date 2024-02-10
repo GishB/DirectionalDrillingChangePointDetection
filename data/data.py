@@ -5,6 +5,16 @@ import requests
 
 
 class DrillingData:
+    """ This class helps to load las files for one of selected horizontal well.
+
+    Notes:
+        - If you define name which does not exist then program will raise NameError!
+        - All data are restored on public yandex cloud server.
+        - If you need to load just raw data then use load_raw_data method.
+
+    Attributes:
+        dataset_name: indicate which well you need to load data.
+    """
     def __init__(self,
                  dataset_name: str = "default"):
         self.url_dict = {
@@ -18,10 +28,31 @@ class DrillingData:
 
     @staticmethod
     def load_raw_data(url: str) -> pd.DataFrame:
+        """ Load las files as it is in pandas format.
+
+        Warning:
+            - These files are available only for education purposes and shall not be used for any other points.
+
+        Notes:
+            - value like -9999 means that data has been missing.
+            - unitless column means type of layer.
+            - uR/h and GR the most important drilling data columns for analysis.
+
+        Returns:
+            pandas dataframe with all available columns and rows from chosen las file.
+        """
         return pd.read_csv(StringIO(requests.get(url).content.decode('utf-8')))
 
     @staticmethod
     def transform_data(data: pd.DataFrame) -> pd.DataFrame:
+        """ Add time columns for selected dataframe.
+
+        Args:
+            data:
+
+        Returns:
+
+        """
         data['time'] = np.arange(0, data.shape[0]*1, 1).astype('datetime64[s]')
         data = data.set_index('time')
         return data
