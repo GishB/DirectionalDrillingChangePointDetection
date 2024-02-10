@@ -2,8 +2,7 @@ import sys
 import os
 sys.path.append(os.path.abspath(".."))
 
-import libs_cpd
-
+from utils import libs_cpd
 
 gaussian = libs_cpd.namedtuple('Gaussian', ['mean', 'var'])
 gaussian.__repr__ = lambda s: '𝒩(μ={:.3f}, 𝜎²={:.3f})'.format(s[0], s[1])
@@ -36,7 +35,7 @@ def online_detection(time_series=list(), window=20, queue_window=10, treshold_co
     queue_risiduals = [0]*window #очередь с рядом остатков по которому отбивают трешхолд
     queue_cp = [0]*queue_window #очередь CPs
     queue_ts = time_series[:window] #р
-    queue_gaussian = [gaussian(libs_cpd.np.mean(queue_ts), libs_cpd.np.var(queue_ts))]*2
+    queue_gaussian = [gaussian(libs_cpd.np.mean(queue_ts), libs_cpd.np.var(queue_ts))] * 2
 
     for i in range(window, len(time_series)): #Это цикл позволяет нам получать данные раз в 9 секунд условно.
         gaussian_likelihood = queue_gaussian[0] #смотрим начальное состояние MEAN VAR

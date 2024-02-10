@@ -1,8 +1,9 @@
 import sys
 import os
-sys.path.append(os.path.abspath(".."))
+sys.path.append(os.path.abspath("../.."))
 
-import libs_cpd
+from utils import libs_cpd
+
 
 def create_report(experiment_results: dict):
     experiment_df = libs_cpd.pd.DataFrame.from_dict(experiment_results, orient='index')

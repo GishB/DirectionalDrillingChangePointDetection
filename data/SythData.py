@@ -1,7 +1,7 @@
 import sys
 import os
 sys.path.append(os.path.abspath(".."))
-import libs_cpd
+from utils import libs_cpd
 
 
 class SythDataGenerator:
@@ -35,7 +35,7 @@ class SythDataGenerator:
         
     def step_rate_function(self, number_steps: int, length: int, mess_rate: float) -> list:
         random_value = libs_cpd.np.random.randint(-length, length)
-        function = [self.gaussian_mess(x=random_value-libs_cpd.np.random.randint(-length, length), mess_rate=mess_rate, size=length//(number_steps+1))\
+        function = [self.gaussian_mess(x=random_value - libs_cpd.np.random.randint(-length, length), mess_rate=mess_rate, size=length // (number_steps + 1))\
                     for w in range(number_steps+1)]
         cps_list = [[0 for i in range(length//(number_steps+1)-1)]+[1] if w != number_steps\
                     else [0 for i in range(length//(number_steps+1)-1)]+[0] for w in range(number_steps+1)]
@@ -52,7 +52,7 @@ class SythDataGenerator:
     
     def wss(self, x: list) -> int:
         return libs_cpd.WindowSizeSelection(time_series = x,
-                                       wss_algorithm = 'summary_statistics_subsequence').get_window_size()[0]
+                                            wss_algorithm = 'summary_statistics_subsequence').get_window_size()[0]
     
     def runner(self):
         out, cps = self.step_rate_function(number_steps=self.number_steps, length=self.length, mess_rate=self.mess_rate)
