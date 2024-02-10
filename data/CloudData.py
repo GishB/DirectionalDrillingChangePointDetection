@@ -15,19 +15,25 @@ class DrillingData:
     Attributes:
         dataset_name: indicate which well you need to load data.
     """
+
     def __init__(self,
-                 dataset_name: str = "default"):
+                 dataset_name: str = "default",
+                 sep: str = ","):
         self.url_dict = {
-            "229G": 'https://storage.yandexcloud.net/cloud-files-public/229G_las_files.csv',
-            "231G": 'https://storage.yandexcloud.net/cloud-files-public/231G_las_files.csv',
-            "237G": 'https://storage.yandexcloud.net/cloud-files-public/237G_las_files.csv'
+            "229G": "https://storage.yandexcloud.net/cloud-files-public/229G_las_files.csv",
+            "231G": "https://storage.yandexcloud.net/cloud-files-public/231G_las_files.csv",
+            "237G": "https://storage.yandexcloud.net/cloud-files-public/237G_las_files.csv",
+            "A564G": "https://storage.yandexcloud.net/cloud-files-public/dataframe.csv",
+            "A684G": "https://storage.yandexcloud.net/cloud-files-public/dataframe.csv"
         }
         self.dataset_name = dataset_name
-        if dataset_name not in ["default", "229G", "231G", "237G"]:
+        self.sep = sep
+        if dataset_name not in ["default", "229G", "231G", "237G", "A684G", "A564G"]:
             raise NameError("There is not such dataset name.")
+        if dataset_name in ["A684G", "A564G"]:
+            self.sep = "|"
 
-    @staticmethod
-    def load_raw_data(url: str) -> pd.DataFrame:
+    def load_raw_data(self, url: str) -> pd.DataFrame:
         """ Load las files as it is in pandas format.
 
         Warning:
@@ -36,12 +42,12 @@ class DrillingData:
         Notes:
             - value like -9999 means that data has been missing.
             - unitless column means type of layer.
-            - uR/h and GR the most important drilling data columns for analysis.
+            - uR/h the most important drilling data columns for analysis.
 
         Returns:
             pandas dataframe with all available columns and rows from chosen las file.
         """
-        return pd.read_csv(StringIO(requests.get(url).content.decode('utf-8')))
+        return pd.read_csv(StringIO(requests.get(url).content.decode('utf-8')), sep=self.sep)
 
     @staticmethod
     def transform_data(data: pd.DataFrame) -> pd.DataFrame:
@@ -53,14 +59,17 @@ class DrillingData:
         Returns:
 
         """
-        data['time'] = np.arange(0, data.shape[0]*1, 1).astype('datetime64[s]')
+        data['time'] = np.arange(0, data.shape[0] * 1, 1).astype('datetime64[s]')
         data = data.set_index('time')
         return data
 
-    def get_data(self) -> pd.DataFrame:
+    def get(self) -> pd.DataFrame:
         if self.dataset_name == "default":
             raw_data = self.load_raw_data(url=self.url_dict.get("237G"))
         else:
             raw_data = self.load_raw_data(url=self.url_dict.get(self.dataset_name))
         return self.transform_data(raw_data)
 
+#     url = "https://storage.yandexcloud.net/cloud-files-public/dataframe.csv"
+#     df = libs_cpd.pd.read_csv(libs_cpd.StringIO(libs_cpd.requests.get(url).content.decode('utf-8')), sep='|')
+#      xxxAA684G or xxxAA564G
