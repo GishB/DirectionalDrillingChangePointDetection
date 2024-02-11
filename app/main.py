@@ -1,10 +1,11 @@
 import streamlit as st
 import data.CloudData as dtest
 import data.data_old as dtest_old
-from utils import libs_cpd, create_report as crtest
-import utils.functions as optf
+from utils import libs_cpd
+from utils.reports import create_report as crtest
+import utils.GeneralFunctions as optf
 import models.kalman as kalman
-from utils.functions import cumsum, queue
+from utils.GeneralFunctions import cumsum, queue
 
 st.title('MLT Project')
 st.sidebar.header('Ввод данных')
