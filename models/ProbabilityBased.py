@@ -72,7 +72,7 @@ class KalmanFilter(WindowSizeSelection):
         """
         return np.random.normal(loc=mean_gauss, scale=std_gauss, size=self.window)
 
-    def get_residuals(self) -> np.ndarray:
+    def get_full_forecast(self) -> np.ndarray:
         """ Generate residuals based on gaussian forecasted values.
 
         Notes:
@@ -92,8 +92,7 @@ class KalmanFilter(WindowSizeSelection):
                 g2=gaussian_prior
             )
         gaussian_forecasted_list = np.array(gaussian_forecasted_list)[:self.df.shape[0]]
-        residuals = self.df[self.target_column].values - gaussian_forecasted_list
-        return residuals
+        return gaussian_forecasted_list
 
     def predict(self) -> np.ndarray:
         """ Change Point Detection based on failure statistics.
@@ -105,7 +104,7 @@ class KalmanFilter(WindowSizeSelection):
         Returns:
             array of binary change points labels.
         """
-        residuals = abs(self.get_residuals())
+        residuals = self.df[self.target_column].values - self.get_full_forecast()
         quantile_val = np.quantile(residuals, q=self.threshold_quantile_coeff)
         cps_list = [1 if val > quantile_val else 0 for val in residuals]
         return np.array(cps_list)
