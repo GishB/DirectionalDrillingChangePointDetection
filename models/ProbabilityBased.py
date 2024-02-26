@@ -5,9 +5,10 @@ from collections import namedtuple
 import sys
 sys.path.append("..")
 from utils.hyperparameters.WSSAlgorithms import WindowSizeSelection
+from utils.DataTransformers import Filter
 
 
-class KalmanFilter(WindowSizeSelection):
+class KalmanFilter(WindowSizeSelection, Filter):
     """ Idea is to find data deviations based on Kalman extrapolation for nearest data.
 
     Attributes:
@@ -18,11 +19,12 @@ class KalmanFilter(WindowSizeSelection):
     """
 
     def __init__(self, df: pd.DataFrame = None, target_column: str = None, window: int = 10,
-                 threshold_quantile_coeff: float = 0.91):
+                 threshold_quantile_coeff: float = 0.91, is_cps_filter_on: bool = True):
         self.df = df
         self.target_column = target_column
         self.window = window
         self.threshold_quantile_coeff = threshold_quantile_coeff
+        self.is_cps_filter_on = is_cps_filter_on
 
         if window is None:
             super().__init__(time_series=df[target_column].values)
@@ -107,5 +109,7 @@ class KalmanFilter(WindowSizeSelection):
         residuals = self.df[self.target_column].values - self.get_full_forecast()
         quantile_val = np.quantile(residuals, q=self.threshold_quantile_coeff)
         cps_list = [1 if val > quantile_val else 0 for val in residuals]
+        if self.is_cps_filter_on:
+            cps_list = self.queue(time_series=cps_list, queue_window=self.window, reversed=True)
         return np.array(cps_list)
 
