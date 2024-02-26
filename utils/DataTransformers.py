@@ -68,7 +68,7 @@ class Filter(Scaler):
         return savgol_filter(x=x, window_length=window_length, polyorder=polyorder, mode=mode)
 
     @staticmethod
-    def queue(queue_window: int = 10, time_series: list[int] = None) -> np.array:
+    def queue(queue_window: int = 10, time_series: list[int] = None, reversed: bool = False) -> np.array:
         """ Filter time series based on nearest value distant.
 
         Notes:
@@ -77,10 +77,13 @@ class Filter(Scaler):
         Args:
             queue_window: minimum distance between two values in your array.
             time_series: array of values.
+            reversed: should we select the last anomaly as true positive and drop others based on window.
 
         Returns:
             filtered array where minimum distance between nearest value preserved.
         """
+        if reversed:
+            time_series = time_series[::-1]
         queue_list: list[int] = [0 for i in range(queue_window)]
         filtered_score: list[int] = []
         for i in range(len(time_series)):
