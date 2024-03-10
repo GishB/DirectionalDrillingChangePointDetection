@@ -5,7 +5,7 @@ sys.path.append(os.path.abspath("../.."))
 from utils import libs_cpd
 from utils.reports import create_report as crtest
 import data.CloudData as dtest
-import models.kalman as kalman
+import models.ProbabilityBased as kalman
 import utils.GeneralFunctions as optf
 
 
