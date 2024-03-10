@@ -148,8 +148,10 @@ class KalmanFilter(WindowSizeSelection, Filter):
         """ Change Point Detection based on failure statistics.
 
         Notes:
-            By default, we expect that threshold value can be found via quantile value due the fact that CPs shape are
+            1. By default, we expect that threshold value can be found via quantile value due the fact that CPs shape are
             less time series shape.
+            2. Keep in mind that queue window algorithm always saves the first anomaly as true result and
+             drop others based on queue window range.
 
         Returns:
             array of binary change points labels.
