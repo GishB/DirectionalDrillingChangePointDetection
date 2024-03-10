@@ -7,10 +7,10 @@ from scipy.linalg import hankel
 
 sys.path.append("..")
 from utils.hyperparameters.WSSAlgorithms import WindowSizeSelection
-from utils.DataTransformers import Filter
+from models.ModelConstructors import ChangePointDetectionConstructor
 
 
-class SingularSequenceTransformer(WindowSizeSelection, Filter):
+class SingularSequenceTransformer(WindowSizeSelection, ChangePointDetectionConstructor):
     """ Idea is to find nearest change points based on abnormal subspace distance.
 
     Attributes:
@@ -28,7 +28,7 @@ class SingularSequenceTransformer(WindowSizeSelection, Filter):
 
     def __init__(self, df: pd.DataFrame = None, target_column: str = None, sequence_window: int = None,
                  queue_window: int = None, n_components: int = None, lag: int = None, is_cps_filter_on: bool = True,
-                 is_quantile_threshold: bool = False, threshold_quantile_coeff: float = 0.91,
+                 is_quantile_threshold: bool = False, is_exp_squared: bool = False, threshold_quantile_coeff: float = 0.91,
                  threshold_std_coeff: float = 3.61):
         self.df = df
         self.target_column = target_column
@@ -40,6 +40,7 @@ class SingularSequenceTransformer(WindowSizeSelection, Filter):
         self.is_quantile_threshold = is_quantile_threshold
         self.threshold_quantile_coeff = threshold_quantile_coeff
         self.threshold_std_coeff = threshold_std_coeff
+        self.is_exp_squared = is_exp_squared
 
         if self.sequence_window is None:
             self.sequence_window = super().__init__(time_series=df[target_column].values).runner_wss()[0]
@@ -126,37 +127,10 @@ class SingularSequenceTransformer(WindowSizeSelection, Filter):
                                                 x_history=matrix_history[counter],
                                                 n_components=self.n_components)
             counter += 1
+        if self.is_exp_squared:
+            score_list = np.exp(score_list)**2
         return score_list
 
-    def predict(self) -> np.ndarray:
-        """ Change Point Detection based on failure statistics.
-
-        Notes:
-            1. By default, we expect that threshold value can be found via quantile value due the fact that CPs shape are
-            less time series shape.
-            2. Keep in mind that queue window algorithm always saves the first anomaly as true result and
-             drop others based on queue window range.
-
-        Returns:
-            array of binary change points labels.
-        """
-        residuals = self.get_distances()
-        dp = [val for val in residuals[:self.sequence_window]]
-        cps_list = [0 for ind in range(self.queue_window)]
-        mean_val = np.mean(dp)
-        std_val = np.std(dp) * self.threshold_std_coeff
-        for val in residuals[self.sequence_window:]:
-            if val > (mean_val + std_val) or val < (mean_val - std_val):
-                cps_list.append(1)
-            else:
-                cps_list.append(0)
-            dp.append(val)
-            dp.pop(0)
-            mean_val = np.mean(dp)
-            std_val = np.std(dp) * self.threshold_std_coeff
-        if self.is_cps_filter_on:
-            cps_list = self.queue(time_series=cps_list, queue_window=self.queue_window, reversed=False)
-        return np.array(cps_list)
 
 
 if __name__ == "__main__":
