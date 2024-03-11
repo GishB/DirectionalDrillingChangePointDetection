@@ -4,7 +4,7 @@ Highly used parent model classes functions for all others implemented models.
 import sys
 import numpy as np
 
-from typing import Optional
+from typing import Optional, Tuple
 
 from utils.DataTransformers import Filter, Scaler
 from utils.hyperparameters.WSSAlgorithms import WindowSizeSelection
@@ -32,7 +32,7 @@ class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
 
     def fit(self,
             x_train: np.array,
-            y_train: Optional[np.array]):
+            y_train: Optional[np.array]) -> Tuple[int, int, int]:
         """ Search for the best model hyperparameters.
 
         Notes:
@@ -43,6 +43,9 @@ class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
         Args:
             x_train: array of time-series values.
             y_train: array of true labels.
+
+        Returns:
+            tuple of model hyperparameters.
         """
         if self.is_fast_parameter_selection:
             if self.sequence_window is None:
@@ -64,6 +67,7 @@ class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
                 self.lag = lag
         else:
             raise NotImplementedError("Any other optimization are not implemented yet! Select is_fast_optimize = True")
+        return self.sequence_window, self.lag, self.queue_window
 
     def get_distances(self) -> np.ndarray:
         """ Apply custom method to get residuals from time series data.
