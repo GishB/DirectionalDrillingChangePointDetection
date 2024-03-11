@@ -48,9 +48,9 @@ class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
             tuple of model hyperparameters.
         """
         if self.is_fast_parameter_selection:
+            super().__init__(time_series=x_train, wss_algorithm=self.fast_optimize_algorithm)
             if self.sequence_window is None:
-                self.sequence_window = super().__init__(time_series=x_train,
-                                                        wss_algorithm=self.fast_optimize_algorithm).runner_wss()[0]
+                self.sequence_window = self.runner_wss()[0]
 
             if self.queue_window is None:
                 if self.sequence_window // 2 <= 10:
