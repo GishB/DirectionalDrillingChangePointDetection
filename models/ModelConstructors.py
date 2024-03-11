@@ -50,7 +50,7 @@ class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
         if self.is_fast_parameter_selection:
             if self.sequence_window is None:
                 self.sequence_window = super().__init__(time_series=x_train,
-                                                        wss_algorithm=self.fast_optimize_algorithm)
+                                                        wss_algorithm=self.fast_optimize_algorithm).runner_wss()[0]
 
             if self.queue_window is None:
                 if self.sequence_window // 2 <= 10:
