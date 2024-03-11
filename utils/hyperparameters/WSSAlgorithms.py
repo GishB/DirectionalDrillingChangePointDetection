@@ -40,7 +40,7 @@ class WindowSizeSelection:
         self.length_ts = len(time_series)
 
         if self.window_max is None:
-            self.window_max = int(len(time_series) / 5)
+            self.window_max = int(len(time_series) // 5)
 
         if self.window_min is None:
             self.window_min = 10
@@ -210,4 +210,8 @@ class WindowSizeSelection:
             window_size_selected, list_score = int(len(self.time_series)), []
         else:
             window_size_selected, list_score = self.dict_methods[self.wss_algorithm]()
+            if window_size_selected > self.window_max:
+                window_size_selected = self.window_max
+            if window_size_selected < self.window_min:
+                window_size_selected = self.window_min
         return window_size_selected, list_score
