@@ -6,11 +6,10 @@ import sys
 from scipy.linalg import hankel
 
 sys.path.append("..")
-from utils.hyperparameters.WSSAlgorithms import WindowSizeSelection
 from models.ModelConstructors import ChangePointDetectionConstructor
 
 
-class SingularSequenceTransformer(WindowSizeSelection, ChangePointDetectionConstructor):
+class SingularSequenceTransformer(ChangePointDetectionConstructor):
     """ Idea is to find nearest change points based on abnormal subspace distance.
 
     Attributes:
@@ -27,29 +26,26 @@ class SingularSequenceTransformer(WindowSizeSelection, ChangePointDetectionConst
     """
 
     def __init__(self, df: pd.DataFrame = None, target_column: str = None, sequence_window: int = None,
-                 queue_window: int = None, n_components: int = None, lag: int = None, is_cps_filter_on: bool = True,
-                 is_quantile_threshold: bool = False, is_exp_squared: bool = False, threshold_quantile_coeff: float = 0.91,
+                 queue_window: int = None, n_components: int = 1, lag: int = None, is_cps_filter_on: bool = True,
+                 is_quantile_threshold: bool = False, is_exp_squared: bool = False,
+                 is_fast_parameter_selection: bool = True,
+                 fast_optimize_algorithm: str = 'summary_statistics_subsequence',
+                 threshold_quantile_coeff: float = 0.91,
                  threshold_std_coeff: float = 3.61):
+
         self.df = df
         self.target_column = target_column
         self.sequence_window = sequence_window
         self.lag = lag
         self.n_components = n_components
+        self.is_fast_parameter_selection = is_fast_parameter_selection
+        self.fast_optimize_algorithm = fast_optimize_algorithm
         self.queue_window = queue_window
         self.is_cps_filter_on = is_cps_filter_on
         self.is_quantile_threshold = is_quantile_threshold
         self.threshold_quantile_coeff = threshold_quantile_coeff
         self.threshold_std_coeff = threshold_std_coeff
         self.is_exp_squared = is_exp_squared
-
-        if self.sequence_window is None:
-            self.sequence_window = super().__init__(time_series=df[target_column].values).runner_wss()[0]
-
-        if self.queue_window is None:
-            self.queue_window = int(self.sequence_window * 1.5)
-
-        if self.lag is None:
-            self.lag = self.sequence_window // 4
 
         if self.df is None:
             raise AttributeError("Dataframe is None!")
@@ -59,9 +55,6 @@ class SingularSequenceTransformer(WindowSizeSelection, ChangePointDetectionConst
 
         if self.df.shape[0] <= 10:
             raise NotImplementedError("Your dataframe rows are less then 10! It has`t been expected.")
-
-        if self.lag >= self.df.shape[0] // 2:
-            raise ArithmeticError("Expected lag between subsequences too high for this dataframe!")
 
         if self.n_components <= 0:
             raise AttributeError("Number of components can not be equal to 0 or lower. There is no logic in it.")
@@ -128,9 +121,8 @@ class SingularSequenceTransformer(WindowSizeSelection, ChangePointDetectionConst
                                                 n_components=self.n_components)
             counter += 1
         if self.is_exp_squared:
-            score_list = np.exp(score_list)**2
+            score_list = np.exp(score_list) ** 2
         return score_list
-
 
 
 if __name__ == "__main__":
@@ -138,7 +130,7 @@ if __name__ == "__main__":
 
     sys.path.append("../..")
 
-    from data.SythData import LinearSteps, SinusoidWaves
+    from data.SythData import SinusoidWaves
 
     data = SinusoidWaves(length_data=4000, cps_number=2, white_noise_level="min").get()
 
@@ -154,5 +146,3 @@ if __name__ == "__main__":
 
     cps_pred = model.predict()
     stop = 0
-
-

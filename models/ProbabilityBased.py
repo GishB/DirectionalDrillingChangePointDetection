@@ -4,11 +4,10 @@ import pandas as pd
 import sys
 
 sys.path.append("..")
-from utils.hyperparameters.WSSAlgorithms import WindowSizeSelection
 from models.ModelConstructors import ChangePointDetectionConstructor
 
 
-class KalmanFilter(WindowSizeSelection, ChangePointDetectionConstructor):
+class KalmanFilter(ChangePointDetectionConstructor):
     """ Idea is to find data deviations based on Kalman extrapolation for nearest data.
 
     Attributes:
@@ -24,12 +23,17 @@ class KalmanFilter(WindowSizeSelection, ChangePointDetectionConstructor):
                  queue_window: int = None,
                  is_cps_filter_on: bool = True,
                  is_quantile_threshold: bool = False,
-                 threshold_quantile_coeff: float = 0.91,
-                 threshold_std_coeff: float = 3.61,
+                 is_fast_parameter_selection: bool = True,
+                 fast_optimize_algorithm: str = 'summary_statistics_subsequence',
+                 threshold_quantile_coeff: float = 0.95,
+                 threshold_std_coeff: float = 3.1,
                  kalman_power_coeff: float = 0.9):
+        super().__init__(queue_window=queue_window, sequence_window=sequence_window)
         self.df = df
         self.target_column = target_column
         self.sequence_window = sequence_window
+        self.is_fast_parameter_selection = is_fast_parameter_selection
+        self.fast_optimize_algorithm = fast_optimize_algorithm
         self.queue_window = queue_window
         self.threshold_quantile_coeff = threshold_quantile_coeff
         self.is_cps_filter_on = is_cps_filter_on
@@ -37,34 +41,24 @@ class KalmanFilter(WindowSizeSelection, ChangePointDetectionConstructor):
         self.is_quantile_threshold = is_quantile_threshold
         self.kalman_power_coeff = kalman_power_coeff
 
-        if sequence_window is None:
-            super().__init__(time_series=df[target_column].values)
-            self.sequence_window = self.runner_wss()[0]
-
-        if queue_window is None:
-            self.queue_window = sequence_window*2
-
-        if sequence_window <= 10:
-            raise NotImplementedError("This algorithm highly like will raise an error because your initial df shape "
-                                      "less then 10 points")
-
         if target_column is None:
             raise ValueError("You must to define target column!")
 
     @staticmethod
-    def get_array_info(data: np.array) -> tuple[float, float]:
+    def get_array_info(array_slice: np.array) -> tuple[float, float]:
         """ Get gaussian stats based on an array of values.
 
         Args:
-            data: slice of time series values.
+            array_slice: slice of time series values.
 
         Returns:
             gaussian stats tuple as mean and std values
         """
-        gaussian_info = np.mean(data), np.std(data)
+        gaussian_info = np.mean(array_slice), np.std(array_slice)
         return gaussian_info
 
-    def gaussian_multiply(self, g1: tuple[float, float], g2: tuple[float, float]) -> tuple[float, float]:
+    @staticmethod
+    def gaussian_multiply(g1: tuple[float, float], g2: tuple[float, float]) -> tuple[float, float]:
         """ Update gaussian stats based on prev info and current status.
 
         Notes:
@@ -147,7 +141,7 @@ class KalmanFilter(WindowSizeSelection, ChangePointDetectionConstructor):
 
 if __name__ == "__main__":
     from models.ProbabilityBased import KalmanFilter
-    from data.SythData import LinearSteps, SinusoidWaves
+    from data.SythData import SinusoidWaves
 
     data = SinusoidWaves(length_data=2000, cps_number=5, white_noise_level="min").get()
 

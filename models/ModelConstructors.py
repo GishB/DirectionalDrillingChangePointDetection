@@ -14,7 +14,7 @@ sys.path.append("..")
 
 class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
     def __init__(self,
-                 fast_optimize_algorithm: str = 'highest_autocorrelation',
+                 fast_optimize_algorithm: str = 'summary_statistics_subsequence',
                  is_cps_filter_on: bool = True,
                  is_fast_parameter_selection: bool = True,
                  threshold_std_coeff: float = 3.1,
