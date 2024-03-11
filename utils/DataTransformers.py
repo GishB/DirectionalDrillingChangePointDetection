@@ -59,7 +59,7 @@ class Scaler:
         return reversed_ts
 
 
-class Filter(Scaler):
+class Filter:
     @staticmethod
     def savgol(x: np.array, window_length: int,
                polyorder: int = 3, mode: str = "nearest") -> np.array:

@@ -45,7 +45,7 @@ class WindowSizeSelection:
         if self.window_min is None:
             self.window_min = 10
 
-        if int(len(time_series) / 5) <= 200:
+        if int(len(time_series) // 2) <= 100:
             self.window_max = len(time_series)
 
     def autocorrelation(self):
