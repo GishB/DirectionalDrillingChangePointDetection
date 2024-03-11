@@ -14,14 +14,13 @@ sys.path.append("..")
 
 class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
     def __init__(self,
-                 fast_optimize_algorithm: str = 'dominant_fourier_frequency',
+                 fast_optimize_algorithm: str = 'highest_autocorrelation',
                  is_cps_filter_on: bool = True,
                  is_fast_parameter_selection: bool = True,
                  threshold_std_coeff: float = 3.1,
-                 queue_window: int = 10,
-                 sequence_window: int = 10,
-                 lag: int = 1):
-
+                 queue_window: int = None,
+                 sequence_window: int = None,
+                 lag: int = None):
         self.fast_optimize_algorithm = fast_optimize_algorithm
         self.is_fast_parameter_selection = is_fast_parameter_selection
         self.is_cps_filter_on = is_cps_filter_on
