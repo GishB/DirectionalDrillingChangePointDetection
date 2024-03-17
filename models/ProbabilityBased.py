@@ -11,14 +11,11 @@ class KalmanFilter(ChangePointDetectionConstructor):
     """ Idea is to find data deviations based on Kalman extrapolation for nearest data.
 
     Attributes:
-        df: pandas dataframe with target data.
-        target_column: column which should be checked.
         sequence_window: expected window for analysis.
         threshold_quantile_coeff: expected deviation between generated and original data.
     """
 
-    def __init__(self, df: pd.DataFrame = None,
-                 target_column: str = None,
+    def __init__(self,
                  sequence_window: int = None,
                  queue_window: int = None,
                  is_cps_filter_on: bool = True,
@@ -28,21 +25,16 @@ class KalmanFilter(ChangePointDetectionConstructor):
                  threshold_quantile_coeff: float = 0.95,
                  threshold_std_coeff: float = 3.1,
                  kalman_power_coeff: float = 0.9):
-        super().__init__(queue_window=queue_window, sequence_window=sequence_window)
-        self.df = df
-        self.target_column = target_column
-        self.sequence_window = sequence_window
-        self.is_fast_parameter_selection = is_fast_parameter_selection
-        self.fast_optimize_algorithm = fast_optimize_algorithm
-        self.queue_window = queue_window
-        self.threshold_quantile_coeff = threshold_quantile_coeff
-        self.is_cps_filter_on = is_cps_filter_on
-        self.threshold_std_coeff = threshold_std_coeff
-        self.is_quantile_threshold = is_quantile_threshold
-        self.kalman_power_coeff = kalman_power_coeff
-
-        if target_column is None:
-            raise ValueError("You must to define target column!")
+        super().__init__(queue_window=queue_window,
+                         sequence_window=sequence_window,
+                         fast_optimize_algorithm=fast_optimize_algorithm,
+                         is_cps_filter_on=is_cps_filter_on,
+                         is_fast_parameter_selection=is_fast_parameter_selection,
+                         threshold_std_coeff=threshold_std_coeff,
+                         )
+        self.parameters["is_quantile_threshold"] = is_quantile_threshold
+        self.parameters["threshold_quantile_coeff"] = threshold_quantile_coeff
+        self.parameters["kalman_power_coeff"] = kalman_power_coeff
 
     @staticmethod
     def get_array_info(array_slice: np.array) -> tuple[float, float]:
@@ -105,19 +97,25 @@ class KalmanFilter(ChangePointDetectionConstructor):
         """
         return mult_gaussian[0] + actual_gaussian[0], mult_gaussian[1] + actual_gaussian[1]
 
-    def get_full_forecast(self) -> np.ndarray:
+    def get_distances(self, target_array: np.array) -> np.ndarray:
         """ Generate residuals based on gaussian forecasted values.
 
         Notes:
             By default, expected that array shape will be more ore equal to 100 values - (up to window size).
 
+        Args:
+            target_array: 1-d time series data values.
+
         Returns:
             array of residuals between generated data and real values.
         """
-        gaussian_forecasted_list = [val for val in self.df[self.target_column][:self.sequence_window]]
-        gaussian_likelihood = self.get_array_info(self.df[self.target_column].values)
-        dp = [val for val in self.df[self.target_column][:self.sequence_window]]
-        for generation_epoch in range(self.sequence_window, self.df.shape[0]):
+        super().get_distances(target_array=target_array)
+        # gaussian_forecasted_list = [val for val in self.df[self.target_column][:self.sequence_window]]
+        gaussian_forecasted_list = [val for val in target_array[:self.parameters.get("sequence_window")]]
+        # gaussian_likelihood = self.get_array_info(self.df[self.target_column].values)
+        gaussian_likelihood = self.get_array_info(target_array)
+        dp = [val for val in target_array[:self.parameters.get("sequence_window")]]
+        for generation_epoch in range(self.parameters.get("sequence_window"), target_array.shape[0]):
             gaussian_forecasted_list.append(self.forecast(mean_gauss=gaussian_likelihood[0],
                                                           std_gauss=np.sqrt(gaussian_likelihood[1])))
             actual_gaussian = self.get_array_info(dp)
@@ -127,16 +125,16 @@ class KalmanFilter(ChangePointDetectionConstructor):
             )
             gaussian_likelihood = self.update(mult_gaussian, actual_gaussian)
             dp.pop(0)
-            dp.append(self.df[self.target_column][generation_epoch])
-        return np.array(gaussian_forecasted_list)
+            dp.append(target_array[generation_epoch])
+        return np.array(gaussian_forecasted_list) - target_array
 
-    def get_distances(self):
-        """ Calculate residuals between filtered time series and original.
-
-        Returns:
-            array of residuals.
-        """
-        return self.df[self.target_column].values - self.get_full_forecast()
+    # def get_distances(self):
+    #     """ Calculate residuals between filtered time series and original.
+    #
+    #     Returns:
+    #         array of residuals.
+    #     """
+    #     return self.df[self.target_column].values - self.get_full_forecast()
 
 
 if __name__ == "__main__":
