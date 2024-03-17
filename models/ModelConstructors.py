@@ -4,10 +4,10 @@ Highly used parent model classes functions for all others implemented models.
 import sys
 import numpy as np
 
-from typing import Optional, Tuple
+from typing import Optional
 
 from utils.DataTransformers import Filter, Scaler
-from utils.hyperparameters.WSSAlgorithms import WindowSizeSelection
+from optimization.WSSAlgorithms import WindowSizeSelection
 
 sys.path.append("..")
 
@@ -51,7 +51,7 @@ class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
 
     def fit(self,
             x_train: np.array,
-            y_train: Optional[np.array]) -> object:
+            y_train: Optional[np.array]):
         """ Search for the best model hyperparameters.
 
         Notes:
@@ -112,8 +112,8 @@ class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
             array of binary change points labels.
         """
         residuals = self.get_distances(target_array)
-        dp = [val for val in residuals[:self.parameters.get("sequence_window")]]
-        cps_list = [0 for ind in range(self.parameters.get("queue_window"))]
+        dp = [val for val in residuals[:self.parameters.get("queue_window")]]
+        cps_list = [0 for ind in range(self.parameters.get("sequence_window"))]
         mean_val = np.mean(dp)
         std_val = np.std(dp) * self.parameters.get("threshold_std_coeff")
         for val in residuals[self.parameters.get("sequence_window"):]:
