@@ -110,9 +110,7 @@ class KalmanFilter(ChangePointDetectionConstructor):
             array of residuals between generated data and real values.
         """
         super().get_distances(target_array=target_array)
-        # gaussian_forecasted_list = [val for val in self.df[self.target_column][:self.sequence_window]]
         gaussian_forecasted_list = [val for val in target_array[:self.parameters.get("sequence_window")]]
-        # gaussian_likelihood = self.get_array_info(self.df[self.target_column].values)
         gaussian_likelihood = self.get_array_info(target_array)
         dp = [val for val in target_array[:self.parameters.get("sequence_window")]]
         for generation_epoch in range(self.parameters.get("sequence_window"), target_array.shape[0]):
@@ -128,21 +126,20 @@ class KalmanFilter(ChangePointDetectionConstructor):
             dp.append(target_array[generation_epoch])
         return np.array(gaussian_forecasted_list) - target_array
 
-    # def get_distances(self):
-    #     """ Calculate residuals between filtered time series and original.
-    #
-    #     Returns:
-    #         array of residuals.
-    #     """
-    #     return self.df[self.target_column].values - self.get_full_forecast()
-
 
 if __name__ == "__main__":
     from models.ProbabilityBased import KalmanFilter
     from data.SythData import SinusoidWaves
 
     data = SinusoidWaves(length_data=2000, cps_number=5, white_noise_level="min").get()
+    target_array = data['x'].values
 
-    model = KalmanFilter(df=data, target_column="x", queue_window=250,
-                         threshold_quantile_coeff=0.95, is_cps_filter_on=True)
-    cps_pred = model.predict()
+    model = KalmanFilter(sequence_window=None,
+                         is_fast_parameter_selection=True,
+                         fast_optimize_algorithm='highest_autocorrelation',
+                         queue_window=10,
+                         threshold_quantile_coeff=0.95,
+                         is_cps_filter_on=True).fit(x_train=list(target_array), y_train=None)
+
+    cps_pred = model.predict(target_array)
+    stop = 0
