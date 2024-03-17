@@ -81,12 +81,21 @@ class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
             raise NotImplementedError("Any other optimization are not implemented yet! Select is_fast_optimize = True")
         return self
 
-    def get_distances(self) -> np.ndarray:
+    def get_distances(self, target_array: np.array) -> np.ndarray:
         """ Apply custom method to get residuals from time series data.
+
+        Notes:
+            Of course it is expected that data timeline has no missing points.
+
+        Args:
+            target_array: 1-d time series data values.
+
 
         Returns:
             array of residuals shaped as initial ts.
         """
+        if target_array.shape[0] <= 10:
+            raise ArithmeticError("x_array shape is equal or lower to 10! It dose`t make sense at all.")
         ...
 
     def predict(self) -> np.ndarray:
