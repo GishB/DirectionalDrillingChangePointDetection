@@ -97,8 +97,9 @@ class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
         if target_array.shape[0] <= 10:
             raise ArithmeticError("x_array shape is equal or lower to 10! It dose`t make sense at all.")
         ...
+        return target_array
 
-    def predict(self) -> np.ndarray:
+    def predict(self, target_array: np.array) -> np.ndarray:
         """ Change Point Detection based on failure statistics.
 
         Notes:
@@ -110,7 +111,7 @@ class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
         Returns:
             array of binary change points labels.
         """
-        residuals = self.get_distances()
+        residuals = self.get_distances(target_array)
         dp = [val for val in residuals[:self.parameters.get("sequence_window")]]
         cps_list = [0 for ind in range(self.parameters.get("queue_window"))]
         mean_val = np.mean(dp)
