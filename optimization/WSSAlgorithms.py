@@ -40,7 +40,11 @@ class WindowSizeSelection:
         self.length_ts = len(time_series)
 
         if self.window_max is None:
-            self.window_max = int(len(time_series) // 5)
+            window_max_option = int(len(time_series) // 5)
+            if window_max_option > 250:
+                self.window_max = 250
+            else:
+                self.window_max = window_max_option
 
         if self.window_min is None:
             self.window_min = 10
