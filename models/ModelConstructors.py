@@ -13,6 +13,12 @@ sys.path.append("..")
 
 
 class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
+    """ Basic class to work with ChangePoint detection models.
+
+    Attributes:
+        parameters: dict of parameters for selected model.
+
+    """
     def __init__(self,
                  fast_optimize_algorithm: str = 'summary_statistics_subsequence',
                  is_cps_filter_on: bool = True,
@@ -21,52 +27,59 @@ class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
                  queue_window: int = None,
                  sequence_window: int = None,
                  lag: int = None):
-        self.fast_optimize_algorithm = fast_optimize_algorithm
-        self.is_fast_parameter_selection = is_fast_parameter_selection
-        self.is_cps_filter_on = is_cps_filter_on
-        self.threshold_std_coeff = threshold_std_coeff
-        self.queue_window = queue_window
-        self.sequence_window = sequence_window
-        self.lag = lag
+        """ Highly used parameters.
+
+        Args:
+            fast_optimize_algorithm: algorithm name from WSS optimization.
+            is_cps_filter_on: is filter change points option based on queue window.
+            is_fast_parameter_selection: is fast optimization applied.
+            threshold_std_coeff: threshold param for abnormal residuals.
+            queue_window: max limited window to filter cps.
+            sequence_window: max length of subsequence which is used for analysis on each step.
+            lag: step between two subsequences.
+        """
+
+        self.parameters = {
+            "is_fast_parameter_selection": is_fast_parameter_selection,
+            "fast_optimize_algorithm": fast_optimize_algorithm,
+            "is_cps_filter_on": is_cps_filter_on,
+            "threshold_std_coeff": threshold_std_coeff,
+            "queue_window" : queue_window,
+            "sequence_window": sequence_window,
+            "lag": lag
+        }
 
     def fit(self,
             x_train: np.array,
-            y_train: Optional[np.array]) -> Tuple[int, int, int]:
+            y_train: Optional[np.array]) -> object:
         """ Search for the best model hyperparameters.
 
         Notes:
             1. In default pipe model will use window size selection algorithm.
             2. You can default all parameters manually in init method.
             3. in case of fast optimal params searching you can drop y_train.
+            4. all parameters are saved in self. parameters
 
         Args:
             x_train: array of time-series values.
             y_train: array of true labels.
 
         Returns:
-            tuple of model hyperparameters.
+            self model object
         """
-        if self.is_fast_parameter_selection:
-            super().__init__(time_series=x_train, wss_algorithm=self.fast_optimize_algorithm)
-            if self.sequence_window is None:
-                self.sequence_window = self.runner_wss()[0]
-
-            if self.queue_window is None:
-                if self.sequence_window // 2 <= 10:
-                    queue_window = 10
-                else:
-                    queue_window = self.sequence_window // 2
-                self.queue_window = queue_window
-
-            if self.lag is None:
-                if self.sequence_window // 4 <= 10:
-                    lag = 10
-                else:
-                    lag = self.sequence_window // 4
-                self.lag = lag
+        if self.parameters.get("is_fast_parameter_selection"):
+            super().__init__(time_series=x_train, wss_algorithm=self.parameters.get("fast_optimize_algorithm"))
+            sequence_window = self.runner_wss()[0]
+            self.parameters["sequence_window"] = sequence_window
+            if self.parameters.get("queue_window") is None:
+                queue_window = 10
+                self.parameters["queue_window"] = queue_window
+            if self.parameters.get("lag") is None:
+                lag = sequence_window // 4
+                self.parameters["lag"] = lag
         else:
             raise NotImplementedError("Any other optimization are not implemented yet! Select is_fast_optimize = True")
-        return self.sequence_window, self.lag, self.queue_window
+        return self
 
     def get_distances(self) -> np.ndarray:
         """ Apply custom method to get residuals from time series data.
@@ -89,11 +102,11 @@ class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
             array of binary change points labels.
         """
         residuals = self.get_distances()
-        dp = [val for val in residuals[:self.sequence_window]]
-        cps_list = [0 for ind in range(self.queue_window)]
+        dp = [val for val in residuals[:self.parameters.get("sequence_window")]]
+        cps_list = [0 for ind in range(self.parameters.get("queue_window"))]
         mean_val = np.mean(dp)
-        std_val = np.std(dp) * self.threshold_std_coeff
-        for val in residuals[self.sequence_window:]:
+        std_val = np.std(dp) * self.parameters.get("threshold_std_coeff")
+        for val in residuals[self.parameters.get("sequence_window"):]:
             if val > (mean_val + std_val) or val < (mean_val - std_val):
                 cps_list.append(1)
             else:
@@ -101,7 +114,9 @@ class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
             dp.append(val)
             dp.pop(0)
             mean_val = np.mean(dp)
-            std_val = np.std(dp) * self.threshold_std_coeff
-        if self.is_cps_filter_on:
-            cps_list = self.queue(time_series=cps_list, queue_window=self.queue_window, reversed=False)
+            std_val = np.std(dp) * self.parameters.get("threshold_std_coeff")
+        if self.parameters.get("is_cps_filter_on"):
+            cps_list = self.queue(time_series=cps_list,
+                                  queue_window=self.parameters.get("queue_window"),
+                                  reversed=False)
         return np.array(cps_list)
