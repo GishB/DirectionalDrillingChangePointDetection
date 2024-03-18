@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 from typing import Optional, Dict, Any
 import sys
@@ -7,6 +8,8 @@ import matplotlib.pyplot as plt
 sys.path.append("../..")
 
 from data.SythData import LinearSteps, SinusoidWaves
+from models.SubspaceBased import SingularSequenceTransformer
+from models.ProbabilityBased import KalmanFilter
 
 
 @st.cache_data
@@ -19,8 +22,7 @@ def data_info(data: pd.DataFrame):
     Returns:
         None.
     """
-    with st.tabs(["Data overview:"]):
-        st.dataframe(data, use_container_width=True)
+    st.dataframe(data, use_container_width=True)
 
 
 @st.cache_data
@@ -36,16 +38,15 @@ def data_plot(data: pd.DataFrame):
     target_column_value_name = "x"
     original_cps_name = "CPs"
 
-    tab1, tab2 = st.tabs(["Raw value generated", "Change Points Original"])
-    with tab1:
-        fig, ax = plt.subplots()
-        ax.plot(data[target_column_value_name])
-        st.plotly_chart(fig, theme="streamlit", use_container_width=True)
+    fig = plt.figure(figsize=(20, 5))
+    plt.plot(data[target_column_value_name], label='Raw syth values')
+    plt.legend()
+    st.pyplot(fig=fig, use_container_width=True)
 
-    with tab2:
-        fig_2, ax_2 = plt.subplots()
-        ax_2.plot(data[original_cps_name])
-        st.plotly_chart(fig_2, theme="streamlit", use_container_width=True)
+    fig_2 = plt.figure(figsize=(20, 5))
+    plt.plot(data[original_cps_name], label='Original Change Points values')
+    plt.legend()
+    st.pyplot(fig=fig_2, use_container_width=True)
 
 
 def init_model_params(model_name: str) -> Dict[str, Optional[Any]]:
@@ -85,7 +86,7 @@ def init_data_loader_params() -> Dict[str, Optional[Any]]:
     """
     params = {
         "length_data": st.sidebar.slider('length_data', 100, 1000, 500),
-        "cps_number": st.sidebar.slider('cps_number', 2, 100, 500),
+        "cps_number": st.sidebar.slider('cps_number', 2, 100, 5),
         "white_noise_level": st.sidebar.radio(
             "What's noise level you want to select",
             ["min", "default", "max"],
@@ -118,3 +119,55 @@ def data_loader(option: str, params: dict) -> Optional[pd.DataFrame]:
         else:
             data = None
     return data
+
+
+@st.cache_data
+def init_model_pipeline(name_model: str, params: dict, df: pd.DataFrame) -> Optional[pd.DataFrame]:
+    """ Model pipeline over syth data.
+
+    Args:
+        name_model: selected model from UI.
+        params: selected initial params.
+        df: syth data.
+
+    Returns:
+        dataframe with change points predicted and residuals.
+    """
+    df_new = df.copy()
+    cps_preds = None
+    residuals = None
+    if name_model == "Kalman Filter":
+        model = KalmanFilter(is_cps_filter_on=params.get("is_cps_filter_in"),
+                             is_cumsum_applied=params.get("is_cumsum_applied"),
+                             queue_window=params.get("queue_window"),
+                             is_z_normalization=True,
+                             is_squared_residual=True,
+                             threshold_std_coeff=params.get("threshold_std_coeff")).fit(list(df.x), None)
+        cps_preds = model.predict(df.x.values)
+        residuals = model.get_distances(df.x.values)
+    elif name_model == "Singular Sequence Decomposition":
+        model = SingularSequenceTransformer(
+            is_cps_filter_on=params.get("is_cps_filter_in"),
+            is_cumsum_applied=params.get("is_cumsum_applied"),
+            is_z_normalization=True,
+            is_squared_residual=True,
+            n_components=params.get("n_components"),
+            threshold_std_coeff=params.get("threshold_std_coeff")).fit(list(df.x), None)
+        cps_preds = model.predict(df.x.values)
+        residuals = model.get_distances(df.x.values)
+    df_new['cps_preds'] = cps_preds
+    df_new['residuals'] = residuals
+    return df_new
+
+
+def model_summary(preds: np.array, df: pd.DataFrame) -> pd.DataFrame:
+    """
+
+    Args:
+        preds:
+        df:
+
+    Returns:
+
+    """
+    ...
