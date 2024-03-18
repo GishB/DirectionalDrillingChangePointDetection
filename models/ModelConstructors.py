@@ -26,7 +26,10 @@ class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
                  threshold_std_coeff: float = 3.1,
                  queue_window: int = None,
                  sequence_window: int = None,
-                 lag: int = None):
+                 lag: int = None,
+                 is_cumsum_applied: bool = True,
+                 is_z_normalization: bool = True,
+                 is_squared_residual: bool = True):
         """ Highly used parameters.
 
         Args:
@@ -37,6 +40,8 @@ class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
             queue_window: max limited window to filter cps.
             sequence_window: max length of subsequence which is used for analysis on each step.
             lag: step between two subsequences.
+            is_cumsum_applied: should we use cumsum algorithm for CPs detection.
+            is_z_normalization: normalization over residual data.
         """
 
         self.parameters = {
@@ -46,7 +51,10 @@ class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
             "threshold_std_coeff": threshold_std_coeff,
             "queue_window" : queue_window,
             "sequence_window": sequence_window,
-            "lag": lag
+            "lag": lag,
+            "is_cumsum_applied": is_cumsum_applied,
+            "is_z_normalization": is_z_normalization,
+            "is_squared_residual": is_squared_residual
         }
 
     def fit(self,
@@ -111,22 +119,4 @@ class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
         Returns:
             array of binary change points labels.
         """
-        residuals = self.get_distances(target_array)
-        dp = [val for val in residuals[:self.parameters.get("queue_window")]]
-        cps_list = [0 for ind in range(self.parameters.get("sequence_window"))]
-        mean_val = np.mean(dp)
-        std_val = np.std(dp) * self.parameters.get("threshold_std_coeff")
-        for val in residuals[self.parameters.get("sequence_window"):]:
-            if val > (mean_val + std_val) or val < (mean_val - std_val):
-                cps_list.append(1)
-            else:
-                cps_list.append(0)
-            dp.append(val)
-            dp.pop(0)
-            mean_val = np.mean(dp)
-            std_val = np.std(dp) * self.parameters.get("threshold_std_coeff")
-        if self.parameters.get("is_cps_filter_on"):
-            cps_list = self.queue(time_series=cps_list,
-                                  queue_window=self.parameters.get("queue_window"),
-                                  reversed=False)
-        return np.array(cps_list)
+        ...

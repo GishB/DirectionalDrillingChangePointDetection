@@ -20,9 +20,13 @@ class SingularSequenceTransformer(ChangePointDetectionConstructor):
                  is_quantile_threshold: bool = False,
                  is_exp_squared: bool = False,
                  is_fast_parameter_selection: bool = True,
+                 is_cumsum_applied: bool = True,
+                 is_z_normalization: bool = True,
+                 is_squared_residual: bool = True,
                  fast_optimize_algorithm: str = 'summary_statistics_subsequence',
                  threshold_quantile_coeff: float = 0.91,
-                 threshold_std_coeff: float = 3.61):
+                 threshold_std_coeff: float = 3.61,
+                 ):
         """
 
         Args:
@@ -42,6 +46,9 @@ class SingularSequenceTransformer(ChangePointDetectionConstructor):
                          is_cps_filter_on=is_cps_filter_on,
                          is_fast_parameter_selection=is_fast_parameter_selection,
                          threshold_std_coeff=threshold_std_coeff,
+                         is_cumsum_applied=is_cumsum_applied,
+                         is_z_normalization=is_z_normalization,
+                         is_squared_residual=is_squared_residual
                          )
         self.parameters["is_quantile_threshold"] = is_quantile_threshold
         self.parameters["threshold_quantile_coeff"] = threshold_quantile_coeff
@@ -147,6 +154,46 @@ class SingularSequenceTransformer(ChangePointDetectionConstructor):
         if self.parameters.get("is_exp_squared"):
             score_list = np.exp(score_list) ** 2
         return score_list
+
+    def predict(self, target_array: np.array) -> np.ndarray:
+        """ Change Point Detection based on failure statistics.
+
+        Notes:
+            1. By default, we expect that threshold value can be found via quantile value due the fact that CPs shape are
+            less time series shape.
+            2. Keep in mind that queue window algorithm always saves the first anomaly as true result and
+             drop others based on queue window range.
+
+        Returns:
+            array of binary change points labels.
+        """
+        residuals = abs(self.get_distances(target_array))
+        if self.parameters.get("is_z_normalization"):
+            residuals = self.z_normalization(residuals)
+        if self.parameters.get('is_cumsum_applied'):
+            alarm_index = self.cumsum(residuals)[2]
+            cps_list = np.zeros_like(residuals)
+            for index in alarm_index:
+                cps_list[index] = 1
+        else:
+            dp = [val for val in residuals[:self.parameters.get("queue_window")]]
+            cps_list = [0 for ind in range(self.parameters.get("sequence_window"))]
+            mean_val = np.mean(dp)
+            std_val = np.std(dp) * self.parameters.get("threshold_std_coeff")
+            for val in residuals[self.parameters.get("sequence_window"):]:
+                if val > (mean_val + std_val) or val < (mean_val - std_val):
+                    cps_list.append(1)
+                else:
+                    cps_list.append(0)
+                dp.append(val)
+                dp.pop(0)
+                mean_val = np.mean(dp)
+                std_val = np.std(dp) * self.parameters.get("threshold_std_coeff")
+        if self.parameters.get("is_cps_filter_on"):
+            cps_list = self.queue(time_series=cps_list,
+                                  queue_window=self.parameters.get("queue_window"),
+                                  reversed=False)
+        return np.array(cps_list)
 
 
 if __name__ == "__main__":
