@@ -153,7 +153,7 @@ def init_model_pipeline(name_model: str, params: dict, df: pd.DataFrame) -> Opti
                 is_cumsum_applied=params.get("is_cumsum_applied"),
                 is_z_normalization=True,
                 is_squared_residual=True,
-                n_components=params.get("n_components"),
+                n_components=2,
                 threshold_std_coeff=params.get("threshold_std_coeff")).fit(list(df.x), None)
             cps_preds = model.predict(df.x.values)
             residuals = model.get_distances(df.x.values)
