@@ -35,37 +35,39 @@ def data_plot(data: pd.DataFrame):
     """
     target_column_value_name = "x"
     original_cps_name = "CPs"
-    with st.tabs(["Raw value generated"]):
+
+    tab1, tab2 = st.tabs(["Raw value generated", "Change Points Original"])
+    with tab1:
         fig, ax = plt.subplots()
         ax.plot(data[target_column_value_name])
-        st.pyplot(fig, use_container_width=True)
+        st.plotly_chart(fig, theme="streamlit", use_container_width=True)
 
-    with st.tabs(["Change Points Original"]):
+    with tab2:
         fig_2, ax_2 = plt.subplots()
         ax_2.plot(data[original_cps_name])
-        st.pyplot(fig_2, use_container_width=True)
+        st.plotly_chart(fig_2, theme="streamlit", use_container_width=True)
 
 
-def init_model_params(model_name: str) -> Dict[str: Any]:
+def init_model_params(model_name: str) -> Dict[str, Optional[Any]]:
     """ Select params for custom model from module models.
 
     Returns:
         dict of params for custom model.
     """
     params = {
-        "is_cps_filter_on": st.checkbox("is_cps_filter_on"),
-        "is_cumsum_applied": st.checkbox("is_cumsum_applied"),
-        "queue_window": st.slider('queue_window', 10, 100, 10),
-        "threshold_std_coeff": st.slider('threshold_str_coeff', 2.1, 5.1, 3.1)
+        "is_cps_filter_on": st.sidebar.checkbox("is_cps_filter_on"),
+        "is_cumsum_applied": st.sidebar.checkbox("is_cumsum_applied"),
+        "queue_window": st.sidebar.slider('queue_window', 10, 100, 10),
+        "threshold_std_coeff": st.sidebar.slider('threshold_std_coeff', 2.1, 5.1, 3.1)
     }
     if model_name == "Singular Sequence Decomposition":
-        params["n_components"] = st.slider('n_components PCA', 1, 3, 2),
+        params["n_components"] = st.sidebar.slider('n_components PCA', 1, 3, 2),
     elif model_name == "Kalman Filter":
         pass
     return params
 
 
-def init_data_loader_params() -> Dict[str: Any]:
+def init_data_loader_params() -> Dict[str, Optional[Any]]:
     """ Init params to loan syth data.
 
     Notes:
@@ -82,9 +84,9 @@ def init_data_loader_params() -> Dict[str: Any]:
         dict of params to generate syth data.
     """
     params = {
-        "length_data": st.slider('length_data', 100, 1000, 500),
-        "cps_number": st.slider('cps_number', 2, 100, 500),
-        "white_noise_level": st.radio(
+        "length_data": st.sidebar.slider('length_data', 100, 1000, 500),
+        "cps_number": st.sidebar.slider('cps_number', 2, 100, 500),
+        "white_noise_level": st.sidebar.radio(
             "What's noise level you want to select",
             ["min", "default", "max"],
             index=0,
