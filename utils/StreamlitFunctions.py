@@ -10,6 +10,7 @@ sys.path.append("../..")
 from data.SythData import LinearSteps, SinusoidWaves
 from models.SubspaceBased import SingularSequenceTransformer
 from models.ProbabilityBased import KalmanFilter
+from utils.Reports import SummaryReport
 
 
 @st.cache_data
@@ -134,40 +135,44 @@ def init_model_pipeline(name_model: str, params: dict, df: pd.DataFrame) -> Opti
         dataframe with change points predicted and residuals.
     """
     df_new = df.copy()
-    cps_preds = None
-    residuals = None
-    if name_model == "Kalman Filter":
-        model = KalmanFilter(is_cps_filter_on=params.get("is_cps_filter_in"),
-                             is_cumsum_applied=params.get("is_cumsum_applied"),
-                             queue_window=params.get("queue_window"),
-                             is_z_normalization=True,
-                             is_squared_residual=True,
-                             threshold_std_coeff=params.get("threshold_std_coeff")).fit(list(df.x), None)
-        cps_preds = model.predict(df.x.values)
-        residuals = model.get_distances(df.x.values)
-    elif name_model == "Singular Sequence Decomposition":
-        model = SingularSequenceTransformer(
-            is_cps_filter_on=params.get("is_cps_filter_in"),
-            is_cumsum_applied=params.get("is_cumsum_applied"),
-            is_z_normalization=True,
-            is_squared_residual=True,
-            n_components=params.get("n_components"),
-            threshold_std_coeff=params.get("threshold_std_coeff")).fit(list(df.x), None)
-        cps_preds = model.predict(df.x.values)
-        residuals = model.get_distances(df.x.values)
-    df_new['cps_preds'] = cps_preds
-    df_new['residuals'] = residuals
-    return df_new
+    with st.spinner(text=f"Loading model {name_model} pipeline over syth data. Just wait..."):
+        cps_preds = None
+        residuals = None
+        if name_model == "Kalman Filter":
+            model = KalmanFilter(is_cps_filter_on=params.get("is_cps_filter_in"),
+                                 is_cumsum_applied=params.get("is_cumsum_applied"),
+                                 queue_window=params.get("queue_window"),
+                                 is_z_normalization=True,
+                                 is_squared_residual=True,
+                                 threshold_std_coeff=params.get("threshold_std_coeff")).fit(list(df.x), None)
+            cps_preds = model.predict(df.x.values)
+            residuals = model.get_distances(df.x.values)
+        elif name_model == "Singular Sequence Decomposition":
+            model = SingularSequenceTransformer(
+                is_cps_filter_on=params.get("is_cps_filter_in"),
+                is_cumsum_applied=params.get("is_cumsum_applied"),
+                is_z_normalization=True,
+                is_squared_residual=True,
+                n_components=params.get("n_components"),
+                threshold_std_coeff=params.get("threshold_std_coeff")).fit(list(df.x), None)
+            cps_preds = model.predict(df.x.values)
+            residuals = model.get_distances(df.x.values)
+        df_new['cps_preds'] = cps_preds
+        df_new['residuals'] = residuals
+        return df_new
 
 
-def model_summary(preds: np.array, df: pd.DataFrame) -> pd.DataFrame:
-    """
+@st.cache_data
+def model_summary(df: pd.DataFrame) -> pd.DataFrame:
+    """ Calculate summary for output model data.
 
     Args:
-        preds:
-        df:
+        df: dataframe where collected cps_preds and residuals info as well as original data.
 
     Returns:
-
+        summary dataframe.
     """
-    ...
+    return SummaryReport().create_report(df=df,
+                                         column_name_preds="cps_preds",
+                                         column_name_original="CPs"
+                                         )
