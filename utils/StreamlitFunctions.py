@@ -8,6 +8,7 @@ sys.path.append("../..")
 from data.SythData import LinearSteps, SinusoidWaves
 
 
+@st.cache_data
 def init_model_params(model_name: str) -> Dict[str: Any]:
     """ Select params for custom model from module models.
 
@@ -29,6 +30,7 @@ def init_model_params(model_name: str) -> Dict[str: Any]:
     return params
 
 
+@st.cache_data
 def init_data_loader_params() -> Dict[str: Any]:
     """ Init params to loan syth data.
 
@@ -57,6 +59,7 @@ def init_data_loader_params() -> Dict[str: Any]:
     return params
 
 
+@st.cache_data
 def data_loader(option: str, params: dict) -> Optional[pd.DataFrame]:
     """ Load data based on option query.
 
