@@ -12,6 +12,11 @@ from models.SubspaceBased import SingularSequenceTransformer
 from models.ProbabilityBased import KalmanFilter
 from utils.Reports import SummaryReport
 
+target_column_value_name = "x"
+original_cps_name = "CPs"
+predicted_cps_name = "cps_preds"
+residuals_name = "residuals"
+
 
 @st.cache_data
 def data_info(data: pd.DataFrame):
@@ -36,8 +41,6 @@ def data_plot(data: pd.DataFrame):
     Returns:
         None
     """
-    target_column_value_name = "x"
-    original_cps_name = "CPs"
 
     fig = plt.figure(figsize=(20, 5))
     plt.plot(data[target_column_value_name], label='Raw syth values')
@@ -157,8 +160,8 @@ def init_model_pipeline(name_model: str, params: dict, df: pd.DataFrame) -> Opti
                 threshold_std_coeff=params.get("threshold_std_coeff")).fit(list(df.x), None)
             cps_preds = model.predict(df.x.values)
             residuals = model.get_distances(df.x.values)
-        df_new['cps_preds'] = cps_preds
-        df_new['residuals'] = residuals
+        df_new[predicted_cps_name] = cps_preds
+        df_new[residuals_name] = residuals
         return df_new
 
 
@@ -176,3 +179,26 @@ def model_summary(df: pd.DataFrame) -> pd.DataFrame:
                                          column_name_preds="cps_preds",
                                          column_name_original="CPs"
                                          )
+
+
+@st.cache_data
+def plot_results(df: pd.DataFrame):
+    """ Plot data for residuals and predicted CPs versus original data.
+
+    Args:
+        df: result dataframe.
+
+    Returns:
+
+    """
+
+    fig = plt.figure(figsize=(20, 5))
+    plt.plot(df[residuals_name], label='Generated residuals based on model')
+    plt.legend()
+    st.pyplot(fig=fig, use_container_width=True)
+
+    fig_2 = plt.figure(figsize=(20, 5))
+    plt.plot(df[original_cps_name], label='Original Change Points values', color='green')
+    plt.plot(df[predicted_cps_name], label='Predicted Change Points values', color='red')
+    plt.legend()
+    st.pyplot(fig=fig_2, use_container_width=True)
