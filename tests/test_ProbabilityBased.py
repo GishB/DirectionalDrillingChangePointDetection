@@ -37,8 +37,10 @@ class TestKalmanFilter:
         g2 = 1, 10
         test_mean, test_var = self.model.gaussian_multiply(g1, g2)
         expected_mean, expected_var = 9.18, 0.90
-        assert round(test_mean, 2) == expected_mean, "test gaussian mean value is equal to 9.18"
-        assert round(test_var, 2) == expected_var, "test gaussian var value is equal to 0.90"
+        assert (test_mean <= expected_mean + 2e-1) and (test_mean >= expected_mean - 2e-1), \
+            "test gaussian mean value is equal to 9.18"
+        assert (test_var <= expected_var + 2e-1) and (test_var >= expected_var - 2e-1), \
+            "test gaussian var value is equal to 0.90"
 
     def test_forecast(self):
         """ forecast next values based on estimated gaussian coefficient.

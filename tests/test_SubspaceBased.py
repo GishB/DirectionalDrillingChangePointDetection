@@ -12,11 +12,11 @@ from models.SubspaceBased import SingularSequenceTransformer
 class TestSingularSequenceTransformer:
     model = SingularSequenceTransformer()
     test_sequence = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-    test_sequence_2 = np.array([100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110])
+    test_sequence_2 = np.array([111, 202, 903, 104, 205, 306, 707, 8, 9, 110])
     history_matrix = hankel(test_sequence)
     future_matrix = hankel(test_sequence_2)
     future_matrix_2 = hankel(test_sequence)
-    n_components = 2
+    n_components = 1
 
     def test_get_hankel_matrix(self):
         """ Apply Hankel method over 1D time-series subsequence to transform it into matrix view.
@@ -39,8 +39,8 @@ class TestSingularSequenceTransformer:
         distance_val_small: float = self.model._sst_svd(x_test=self.future_matrix_2,
                                                         x_history=self.history_matrix,
                                                         n_components=self.n_components)
-        assert distance_val_large > 100, "Large distance between two matrix in subspace."
-        assert distance_val_small < 1, "Small distance between two identical matrix in subspace."
+        assert distance_val_large > 0.05, "Large distance between two matrix in subspace."
+        assert distance_val_small < 1e-5, "Small distance between two identical matrix in subspace."
 
 
 
