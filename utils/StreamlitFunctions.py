@@ -181,24 +181,20 @@ def model_summary(df: pd.DataFrame) -> pd.DataFrame:
                                          )
 
 
-@st.cache_data
-def plot_results(df: pd.DataFrame):
+def plot_results(df_summary_: pd.DataFrame):
     """ Plot data for residuals and predicted CPs versus original data.
 
     Args:
-        df: result dataframe.
-
-    Returns:
-
+        df_summary_: result dataframe.
     """
 
     fig = plt.figure(figsize=(20, 5))
-    plt.plot(df[residuals_name], label='Generated residuals based on model')
+    plt.plot(df_summary_[residuals_name], label='Generated residuals based on model')
     plt.legend()
     st.pyplot(fig=fig, use_container_width=True)
 
     fig_2 = plt.figure(figsize=(20, 5))
-    plt.plot(df[original_cps_name], label='Original Change Points values', color='green')
-    plt.plot(df[predicted_cps_name], label='Predicted Change Points values', color='red')
+    plt.plot(df_summary_[original_cps_name], label='Original Change Points values', color='green')
+    plt.plot(df_summary_[predicted_cps_name], label='Predicted Change Points values', color='red')
     plt.legend()
     st.pyplot(fig=fig_2, use_container_width=True)
