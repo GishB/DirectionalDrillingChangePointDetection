@@ -35,4 +35,4 @@ if option_start_model != "None" and df is not None:
 if df_updated is not None:
     summary_df = useful.model_summary(df=df_updated)
     useful.data_info(summary_df)
-    useful.plot_results(summary_df)
+    useful.plot_results(df_updated)
