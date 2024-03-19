@@ -9,10 +9,6 @@ from models.ModelConstructors import ChangePointDetectionConstructor
 
 class KalmanFilter(ChangePointDetectionConstructor):
     """ Idea is to find data deviations based on Kalman extrapolation for nearest data.
-
-    Attributes:
-        sequence_window: expected window for analysis.
-        threshold_quantile_coeff: expected deviation between generated and original data.
     """
 
     def __init__(self,
