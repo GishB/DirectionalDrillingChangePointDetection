@@ -5,7 +5,7 @@ sys.path.append("..")
 
 import utils.StreamlitFunctions as useful
 
-st.title('Change Point Detection app.')
+st.title('Change Point Detection examples.')
 
 st.sidebar.header('UI Model pipeline')
 option_model = st.sidebar.selectbox(
