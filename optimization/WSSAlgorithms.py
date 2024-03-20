@@ -16,7 +16,7 @@ class WindowSizeSelection:
     wss_algorithm: str
         type of WSS algorithm. It can be 'highest_autocorrelation', 'dominant_fourier_frequency',
         'summary_statistics_subsequence' or 'multi_window_finder'.
-        By default it is 'dominant_fourier_frequency'
+        By default, it is 'dominant_fourier_frequency'
     Reference:
         (c) "Windows Size Selection in Unsupervised Time Series Analytics: A Review and Benchmark. Arik Ermshaus,
     Patrick Schafer, and Ulf Leser"
