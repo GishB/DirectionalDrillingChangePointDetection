@@ -1,11 +1,7 @@
-import numpy as np
 import pandas as pd
 from typing import Optional, Dict, Any
-import sys
 import streamlit as st
 import matplotlib.pyplot as plt
-
-sys.path.append("../..")
 
 from data.SythData import LinearSteps, SinusoidWaves
 from models.SubspaceBased import SingularSequenceTransformer
