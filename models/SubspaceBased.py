@@ -1,9 +1,6 @@
 from typing import Tuple
 import numpy as np
 from scipy.linalg import hankel
-import sys
-
-sys.path.append("..")
 from models.ModelConstructors import ChangePointDetectionConstructor
 
 

@@ -9,8 +9,6 @@ from typing import Optional
 from utils.DataTransformers import Filter, Scaler
 from optimization.WSSAlgorithms import WindowSizeSelection
 
-sys.path.append("..")
-
 
 class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
     """ Basic class to work with ChangePoint detection models.

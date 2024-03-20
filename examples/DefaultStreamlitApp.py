@@ -1,8 +1,4 @@
 import streamlit as st
-import sys
-
-sys.path.append("..")
-
 import utils.StreamlitFunctions as useful
 
 st.title('Change Point Detection examples.')
