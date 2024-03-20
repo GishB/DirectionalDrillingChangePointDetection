@@ -1,11 +1,5 @@
-import pytest
-import sys
-from scipy.linalg import hankel
-
 import numpy as np
-
-sys.path.append("..")
-
+from scipy.linalg import hankel
 from models.SubspaceBased import SingularSequenceTransformer
 
 
