@@ -1,7 +1,6 @@
 """
 Highly used parent model classes functions for all others implemented models.
 """
-import sys
 import numpy as np
 
 from typing import Optional

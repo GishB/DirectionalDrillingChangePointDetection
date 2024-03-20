@@ -194,7 +194,6 @@ class SingularSequenceTransformer(ChangePointDetectionConstructor):
 
 
 if __name__ == "__main__":
-    sys.path.append("../..")
     from data.SythData import SinusoidWaves
 
     data = SinusoidWaves(length_data=2000, cps_number=4, white_noise_level="min").get()
