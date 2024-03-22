@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import stats
 from scipy.signal import savgol_filter
 from detecta import detect_cusum
 from typing import Any
@@ -117,3 +118,96 @@ class Filter:
                                                     ending=True,
                                                     show=False)
         return ending, start, alarm, cumsum
+
+
+class StatisticalFilter(Filter):
+    """ Based on statistical significant changes for two subsequences filter change point labels.
+
+    Attributes:
+        queue_window: minimal distance between two change points.
+        pvalue_threshold:
+    """
+    def __init__(self,
+                 queue_window: int = 10,
+                 pvalue_threshold: float = 0.05):
+        self.queue_window = queue_window
+        self.pvalue_threshold = pvalue_threshold
+
+    @staticmethod
+    def extract_index_cps(cps_labels: np.ndarray) -> np.ndarray:
+        """ extract all index where change points detected.
+
+        Args:
+            cps_labels: array of data where all cps saved.
+
+        Returns:
+            filtered cps labels array.
+        """
+        return np.where(cps_labels == 1)[0]
+
+    @staticmethod
+    def split_list_of_arrays(extracted_index_cps: np.array, data: np.array) -> list[np.array]:
+        """ Split data based on extracted cps index.
+
+        Args:
+            extracted_index_cps: index for cps at data.
+            data: values for target 1d series.
+
+        Returns:
+            list of subsequences split by extracted cps index.
+        """
+        first_indx: int = 0
+        list_of_subsequence = []
+        for second_indx in extracted_index_cps:
+            # append new subsequence
+            list_of_subsequence.append(data[first_indx:second_indx])
+            # update indx
+            first_indx = second_indx
+        return list_of_subsequence
+
+    def check_cps_by_ttest(self, subsequences_splitten_by_cps: list[np.array]) -> list[bool]:
+        """ Check that nearest subsequences are different statistical significant.
+
+        Notes:
+            1. if significant different has been found then you will get True.
+            2. Expected that distribution are normal for all subsequences.
+
+        Args:
+            subsequences_splitten_by_cps: list of subseqences of different shapes.
+
+        Returns:
+            list of boolean values.
+        """
+        list_bool = []
+        past_subsequence = subsequences_splitten_by_cps[0]
+        for next_subsequence in subsequences_splitten_by_cps:
+            pvalue = stats.ttest_ind(past_subsequence, next_subsequence).pvalue
+            if pvalue < self.pvalue_threshold:
+                list_bool.append(True)
+            else:
+                list_bool.append(False)
+            past_subsequence = next_subsequence
+        return list_bool
+
+    def filter(self, cps_labels: np.array, data: np.array) -> np.array:
+        """ Filter cps labels based on statistical idea and minimum sequence window.
+
+        Args:
+            cps_labels: list of cps labels.
+            data: list of original data.
+
+        Returns:
+            filtered list of cps labels.
+        """
+        cps_labels = self.queue(queue_window=self.queue_window,
+                                time_series=list(cps_labels))
+        extract_index = self.extract_index_cps(cps_labels)
+        if extract_index.shape[0] != 0:
+            subsequences_splittedby_cps = self.split_list_of_arrays(extracted_index_cps=extract_index,
+                                                                    data=data)
+            list_bool = self.check_cps_by_ttest(subsequences_splittedby_cps)
+            extract_index = [extract_index[ind] for ind, val in enumerate(list_bool) if val is True]
+        zeros_cps_label = np.zeros_like(cps_labels)
+        zeros_cps_label[extract_index] = 1
+        return zeros_cps_label
+
