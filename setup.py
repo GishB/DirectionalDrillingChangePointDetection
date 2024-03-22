@@ -35,5 +35,5 @@ setup(
         'detecta<=0.0.5'
         'tsad==0.19.3'
     ],
-
+    include_package_data=True,
     zip_safe=False)
