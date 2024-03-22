@@ -14,6 +14,8 @@ classes has been refactored based on implementations from ***Fedot.Industrial***
 
 #### Tasks:
 
+...
+
 ## To set up local project dependencies:
 ```commandline
     python3 setup.py build

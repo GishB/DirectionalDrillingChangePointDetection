@@ -35,4 +35,5 @@ setup(
         'detecta<=0.0.5'
         'tsad==0.19.3'
     ],
+
     zip_safe=False)
