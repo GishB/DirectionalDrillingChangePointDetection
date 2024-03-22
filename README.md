@@ -25,7 +25,6 @@ classes has been refactored based on implementations from ***Fedot.Industrial***
 from models.SubspaceBased import SingularSequenceTransformer
 from data.SythData import SinusoidWaves
 from utils.Reports import SummaryReport
-import matplotlib.pyplot as plt
 
 # init df
 data = SinusoidWaves(length_data=1000,
