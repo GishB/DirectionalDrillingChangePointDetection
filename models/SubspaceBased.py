@@ -1,5 +1,6 @@
 from typing import Tuple
 import numpy as np
+from scipy.signal import find_peaks
 from scipy.linalg import hankel
 from models.ModelConstructors import ChangePointDetectionConstructor
 
@@ -13,11 +14,11 @@ class SingularSequenceTransformer(ChangePointDetectionConstructor):
                  queue_window: int = None,
                  n_components: int = 1,
                  lag: int = None,
-                 is_cps_filter_on: bool = True,
-                 is_quantile_threshold: bool = False,
+                 is_cps_filter_on: bool = False,
+                 is_quantile_threshold: bool = True,
                  is_exp_squared: bool = False,
                  is_fast_parameter_selection: bool = True,
-                 is_cumsum_applied: bool = True,
+                 is_cumsum_applied: bool = False,
                  is_z_normalization: bool = True,
                  is_squared_residual: bool = True,
                  fast_optimize_algorithm: str = 'summary_statistics_subsequence',
@@ -170,8 +171,14 @@ class SingularSequenceTransformer(ChangePointDetectionConstructor):
         if self.parameters.get('is_cumsum_applied'):
             alarm_index = self.cumsum(residuals)[2]
             cps_list = np.zeros_like(residuals)
-            for index in alarm_index:
-                cps_list[index] = 1
+            cps_list[alarm_index] = 1
+        elif self.parameters.get("is_quantile_threshold"):
+            alarm_index = find_peaks(residuals,
+                                     distance=self.parameters.get("queue_window"),
+                                     threshold=np.quantile(residuals,
+                                                           self.parameters.get("threshold_quantile_coeff")))[0]
+            cps_list = np.zeros_like(residuals)
+            cps_list[alarm_index] = 1
         else:
             dp = [val for val in residuals[:self.parameters.get("queue_window")]]
             cps_list = [0 for ind in range(self.parameters.get("sequence_window"))]
