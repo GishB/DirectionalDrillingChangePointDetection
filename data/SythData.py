@@ -1,3 +1,6 @@
+from typing import Optional, List
+from utils.DataTransformers import Filter
+
 import numpy as np
 import pandas as pd
 
@@ -154,7 +157,7 @@ class SinusoidWaves(SythDataConstructor):
         beta_past = np.random.uniform(low=beta_past, high=2)
         if np.random.uniform(low=0, high=1) > beta_mutation_coeff:
             beta_past = np.random.uniform(low=-2, high=2)
-        x = np.linspace(start=0, stop= self.length_data // self.cps_number, num=self.length_data // self.cps_number)
+        x = np.linspace(start=0, stop=self.length_data // self.cps_number, num=self.length_data // self.cps_number)
         return np.sin(x) * beta_past, beta_past
 
     def generate_data(self, initial_beta: float = 0.5, beta_mutation_coeff: float = 0.5) -> np.array:
@@ -171,3 +174,138 @@ class SinusoidWaves(SythDataConstructor):
         df['x'] = np.add(self.generate_data(), self.generate_white_noise())
         df['CPs'] = self.generate_array_of_change_points()
         return df
+
+
+class RandomChangePointsGenerator(Filter):
+    """ Default idea is to generate different change point sequences for 1D cases.
+    """
+
+    def __init__(self,
+                 seed: Optional[int],
+                 cps_number: int = 0,
+                 length_data: int = 24 * 7 * 15 + 15,
+                 minimum_sequence_cp: int = 10,
+                 start_mutation_coeff: float = 0.5,
+                 treshold_mutation_coeff: float = 0.1,
+                 power_coeff: float = 2,
+                 attemps_to_failure: int = 15):
+
+        if seed is None:
+            seed = np.random.randint(low=0, high=65535)
+
+        self.seed = seed
+        self.cps_number = cps_number
+        self.length_data = length_data
+
+        self.power_coeff = power_coeff
+        self.start_mutation_coeff = start_mutation_coeff
+        self.treshold_mutation_coeff = treshold_mutation_coeff
+        self.minimum_sequence_cp = minimum_sequence_cp
+        self.attemps_to_failure = attemps_to_failure
+
+        if cps_number < 0:
+            raise AttributeError(f"Change points number has to be positive! However, you set it to be {cps_number}")
+
+        if length_data < 10:
+            raise NotImplementedError("This class expect to generate array with more then 10 values in a sequence!")
+
+        if (length_data / cps_number) < 10:
+            raise NotImplementedError("Expected length of data is to small for expected cps_number! One of your "
+                                      "sequences could be less then 10 points which may lead to cps model errors.")
+
+    def _new_mutation_coeff(self, sequence_len: int) -> float:
+        """ Generate random float value between 0 and 1.
+
+        Notes:
+            we use it to update mutation coefficient.
+
+        Arg:
+            sequence_len: len of sequence from the last change points.
+
+        Returns:
+            float value
+        """
+        if sequence_len ** self.power_coeff > self.length_data:
+            out = np.random.random() - self.treshold_mutation_coeff
+        else:
+            out = np.random.random()
+        return out
+
+    def _is_mutation_apply(self, sequence_len: int, past_mutation_coeff: float) -> bool:
+        """ Should we apply mutation factor
+
+        Notes:
+            if true then we apply mutation.
+
+        Arg:
+            sequence_len: len of sequence from the last change points.
+            past_mutation_coeff: coefficient which we use for mutation logic.
+
+        Returns:
+            boolean value
+        """
+        out = False
+        if sequence_len > self.minimum_sequence_cp:
+            if np.random.random() > past_mutation_coeff:
+                out = True
+        return out
+
+    def generate_change_points_with_random(self, cps_array: Optional[np.array]) -> np.array:
+        """ Generate change points based on random numpy function.
+
+        Notes:
+            1. By default, this function helps to generate all change points
+             in case of any failure from mutation function.
+            2. You can simply use this function to generate you own change points based on random indx.
+            3. Here you might see queue filter which helps to filter change point distance.
+
+        Args:
+            cps_array: array of change points or just none if you generate a new one.
+
+        Returns:
+            array of change points.
+        """
+        if cps_array is None:
+            cps_array: np.array = np.zeros(shape=self.length_data)
+        count_cps = sum(cps_array)
+        attempts: int = 0
+        while (count_cps < self.cps_number) or (attempts < self.attemps_to_failure):
+            random_cp_index = np.random.randint(size=self.cps_number, low=5, high=self.length_data-5)
+            cps_array[random_cp_index] = 1
+            cps_array = self.queue(queue_window=self.minimum_sequence_cp, time_series=cps_array)
+            attempts += 1
+        if attempts == self.attemps_to_failure:
+            raise NotImplementedError("Failure to generate random change points due unexpected behaviour! "
+                                      f"Try to set other init params or increase sequence length: "
+                                      f"cps_number = {self.cps_number} |"
+                                      f" minimum_sequence_cp: {self.minimum_sequence_cp}")
+        return cps_array
+
+    def generate_change_points_with_mutation(self) -> np.array:
+        """ Main function to generate array of change points.
+
+        Notes:
+            Baseline idea is to generate change points based on mutation coefficient.
+
+        Returns:
+            array of change points
+        """
+        cps_array: np.array = np.zeros(shape=self.length_data)
+        cps_counter: int = 0
+        counter_sequence_len: int = 0
+        indx: int = 0
+        past_mutation_coeff = self.start_mutation_coeff
+        while indx < self.length_data - 5:
+            is_cp: bool = False
+            if indx >= 5:
+                is_cp: bool = self._is_mutation_apply(counter_sequence_len, past_mutation_coeff)
+            if is_cp:
+                past_mutation_coeff = self._new_mutation_coeff(counter_sequence_len)
+                cps_counter += 1
+                counter_sequence_len = 0
+            else:
+                counter_sequence_len += 1
+            indx += 1
+        if cps_counter < self.cps_number:
+            cps_array = self.generate_change_points_with_random(cps_array)
+        return cps_array
