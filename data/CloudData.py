@@ -1,5 +1,7 @@
 import pandas as pd
+import numpy as np
 from io import StringIO
+from typing import Tuple, List, Optional
 import requests
 
 
@@ -27,7 +29,8 @@ class DrillingData:
         }
         self.dataset_name = dataset_name
         self.sep = sep
-        if dataset_name not in ["default", "229G", "231G", "237G", "xxxAA684G", "xxxAA564G"]:
+        self.list_of_available_dataset_names: List[str] = ["default", "229G", "231G", "237G", "xxxAA684G", "xxxAA564G"]
+        if dataset_name not in self.list_of_available_dataset_names:
             raise NameError("There is not such dataset name.")
         if dataset_name in ["xxxAA684G", "xxxAA564G"]:
             self.sep = "|"
@@ -48,7 +51,53 @@ class DrillingData:
         """
         return pd.read_csv(StringIO(requests.get(url).content.decode('utf-8')), sep=self.sep)
 
+    @staticmethod
+    def generate_cp_based_on_rock_types(array_of_rocks_types: np.array) -> np.array:
+        """ Generate change points based on different rock types at original data.
+
+        Arg:
+            array_of_rocks_types: array of rock types
+
+        Returns:
+            array of binary data which contents change points between different rock types.
+        """
+        dp = np.zeros_like(array_of_rocks_types)
+        first_type: int = array_of_rocks_types[0]
+        for indx, val in enumerate(array_of_rocks_types):
+            if first_type != val:
+                dp[indx] = 1
+                first_type = val
+        return dp
+
+    def extract_transform(self) -> np.ndarray[np.array, np.array]:
+        """ Extract target dataframe and transform data as well as X and Y.
+
+        Notes:
+            1) If are looking for CPD task data and hot start function here it is.
+            2) x features based on gamma rate.
+            3) y - target features based on different rock types (there are 6 of them).
+
+        Returns:
+            numpy array for features and target data.
+        """
+        df = self.get()
+        if "xxx" not in self.dataset_name:
+            x = df["GR"].values
+            y = df["CPs"].values
+        else:
+            df.replace(to_replace=-9999, value=np.NaN, regex=True, inplace=True)
+            df.dropna(thresh=15, inplace=True)
+            df.reset_index(drop=True, inplace=True)
+            x = df["uR/h"].values
+            y = self.generate_cp_based_on_rock_types(df["unitless"].values)
+        return np.array(x, y)
+
     def get(self) -> pd.DataFrame:
+        """ Just load data from available bucket.
+
+        Returns:
+            selected dataframe.
+        """
         if self.dataset_name == "default":
             raw_data = self.load_raw_data(url=self.url_dict.get("237G"))
         else:
