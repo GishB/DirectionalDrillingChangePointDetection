@@ -56,7 +56,7 @@ df_summary_report = SummaryReport().create_report(df=data,
                               column_name_original="CPs"
                               )
 ```
-![Plot results](img.png)
+![ExampleResults.png](ExampleResults.png)
 
 TO DO:
 
