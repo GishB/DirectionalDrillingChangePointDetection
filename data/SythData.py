@@ -181,13 +181,13 @@ class RandomChangePointsGenerator(Filter):
     """
 
     def __init__(self,
-                 seed: Optional[int],
+                 seed: Optional[int] = None,
                  cps_number: int = 0,
                  length_data: int = 24 * 7 * 15 + 15,
                  minimum_sequence_cp: int = 10,
                  start_mutation_coeff: float = 0.5,
                  treshold_mutation_coeff: float = 0.1,
-                 power_coeff: float = 2,
+                 power_coeff: float = 1.2,
                  attemps_to_failure: int = 15):
 
         if seed is None:
@@ -209,7 +209,7 @@ class RandomChangePointsGenerator(Filter):
         if length_data < 10:
             raise NotImplementedError("This class expect to generate array with more then 10 values in a sequence!")
 
-        if (length_data / cps_number) < 10:
+        if (length_data / (cps_number + 1e-9)) < 10:
             raise NotImplementedError("Expected length of data is to small for expected cps_number! One of your "
                                       "sequences could be less then 10 points which may lead to cps model errors.")
 
@@ -250,7 +250,7 @@ class RandomChangePointsGenerator(Filter):
                 out = True
         return out
 
-    def generate_change_points_with_random(self, cps_array: Optional[np.array]) -> np.array:
+    def generate_change_points_with_random(self, cps_array: Optional[np.array] = None) -> np.array:
         """ Generate change points based on random numpy function.
 
         Notes:
@@ -269,12 +269,15 @@ class RandomChangePointsGenerator(Filter):
             cps_array: np.array = np.zeros(shape=self.length_data)
         count_cps = sum(cps_array)
         attempts: int = 0
-        while (count_cps < self.cps_number) or (attempts < self.attemps_to_failure):
+        while count_cps < self.cps_number:
             random_cp_index = np.random.randint(size=self.cps_number, low=5, high=self.length_data-5)
             cps_array[random_cp_index] = 1
             cps_array = self.queue(queue_window=self.minimum_sequence_cp, time_series=cps_array)
+            count_cps += sum(cps_array)
             attempts += 1
-        if attempts == self.attemps_to_failure:
+            if attempts > self.attemps_to_failure:
+                break
+        if attempts >= self.attemps_to_failure:
             raise NotImplementedError("Failure to generate random change points due unexpected behaviour! "
                                       f"Try to set other init params or increase sequence length: "
                                       f"cps_number = {self.cps_number} |"
@@ -295,12 +298,15 @@ class RandomChangePointsGenerator(Filter):
         counter_sequence_len: int = 0
         indx: int = 0
         past_mutation_coeff = self.start_mutation_coeff
-        while indx < self.length_data - 5:
+        while indx < (self.length_data - 5):
+            if cps_counter >= self.cps_number:
+                break
             is_cp: bool = False
             if indx >= 5:
                 is_cp: bool = self._is_mutation_apply(counter_sequence_len, past_mutation_coeff)
             if is_cp:
                 past_mutation_coeff = self._new_mutation_coeff(counter_sequence_len)
+                cps_array[indx] = 1
                 cps_counter += 1
                 counter_sequence_len = 0
             else:
@@ -308,4 +314,7 @@ class RandomChangePointsGenerator(Filter):
             indx += 1
         if cps_counter < self.cps_number:
             cps_array = self.generate_change_points_with_random(cps_array)
+        else:
+            cps_array = self.queue(queue_window=self.minimum_sequence_cp,
+                                   time_series=cps_array)
         return cps_array
