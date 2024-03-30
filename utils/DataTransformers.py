@@ -2,7 +2,7 @@ import numpy as np
 from scipy import stats
 from scipy.signal import savgol_filter
 from detecta import detect_cusum
-from typing import Any
+from typing import Any, List
 
 
 class Scaler:
@@ -69,7 +69,7 @@ class Filter:
         return savgol_filter(x=x, window_length=window_length, polyorder=polyorder, mode=mode)
 
     @staticmethod
-    def queue(queue_window: int = 10, time_series: list[int] = None, reversed: bool = False) -> np.array:
+    def queue(time_series: np.array, queue_window: int = 10, reversed: bool = False) -> np.array:
         """ Filter time series based on nearest value distant.
 
         Notes:
