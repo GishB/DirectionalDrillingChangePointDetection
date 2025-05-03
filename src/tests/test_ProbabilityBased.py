@@ -1,5 +1,5 @@
 import numpy as np
-from models.ProbabilityBased import KalmanFilter
+from src.models.ProbabilityBased.kalmanfilter import KalmanFilter
 
 
 class TestKalmanFilter:

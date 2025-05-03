@@ -1,5 +1,5 @@
 import streamlit as st
-import utils.StreamlitFunctions as useful
+import src.utils.StreamlitFunctions as useful
 
 st.title('Change Point Detection examples.')
 

@@ -1,5 +1,5 @@
 from typing import Optional, List
-from utils.DataTransformers import Filter
+from src.utils.DataTransformers import Filter
 
 import numpy as np
 import pandas as pd
@@ -318,3 +318,26 @@ class RandomChangePointsGenerator(Filter):
             cps_array = self.queue(queue_window=self.minimum_sequence_cp,
                                    time_series=cps_array)
         return cps_array
+
+
+class SimpleRandomTimeSeries(RandomChangePointsGenerator):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def generate_data(self, cps_list: List[int], min_max_val: int, min_max_std: int) -> List[float]:
+        linear_val = np.random.randint(0, min_max_val)
+        std = np.random.randint(0, min_max_std)
+        linear_steps = [0 for x in cps_list]
+        for ind, tmp_val in enumerate(cps_list):
+            if tmp_val != 0:
+                linear_val = np.random.randint(-min_max_val, min_max_val)
+                std = np.random.randint(0, min_max_std)
+            linear_steps[ind] = np.random.normal(loc=linear_val, scale=std, size=1)[0]
+        return np.array(linear_steps)
+
+    def get(self, min_max_val: int, min_max_std: int) -> np.array:
+        random_cps_list = self.generate_change_points_with_mutation()
+        random_time_series = self.generate_data(cps_list=random_cps_list,
+                                                min_max_val=min_max_val,
+                                                min_max_std=min_max_std)
+        return np.array([random_cps_list, random_time_series])

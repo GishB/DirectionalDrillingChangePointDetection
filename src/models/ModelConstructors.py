@@ -5,28 +5,36 @@ import numpy as np
 
 from typing import Optional
 
-from utils.DataTransformers import Filter, Scaler
-from optimization.WSSAlgorithms import WindowSizeSelection
+from src.utils.DataTransformers import Filter, Scaler
+from src.optimization.WSSAlgorithms import WindowSizeSelection
 
 
-class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
+class ModelConstuctor:
+    def __init__(self, **kwargs):
+        self.fast_optimize_algorithm: str = "default"
+
+    def fit(self,
+            x_train: np.array,
+            y_train: Optional[np.array]):
+        """ Basic fit method."""
+        ...
+
+    def predict(self, target_array: np.array) -> np.ndarray:
+        """ Basic predict method."""
+        ...
+
+
+class ChangePointDetectionConstructor(ModelConstuctor, WindowSizeSelection, Filter, Scaler):
     """ Basic class to work with ChangePoint detection models.
 
     Attributes:
         parameters: dict of parameters for selected model.
 
     """
-    def __init__(self,
-                 fast_optimize_algorithm: str = 'summary_statistics_subsequence',
-                 is_cps_filter_on: bool = True,
-                 is_fast_parameter_selection: bool = True,
-                 threshold_std_coeff: float = 3.1,
-                 queue_window: int = None,
-                 sequence_window: int = None,
-                 lag: int = None,
-                 is_cumsum_applied: bool = True,
-                 is_z_normalization: bool = True,
-                 is_squared_residual: bool = True):
+    def __init__(self, fast_optimize_algorithm: str = 'summary_statistics_subsequence', is_cps_filter_on: bool = True,
+                 is_fast_parameter_selection: bool = True, threshold_std_coeff: float = 3.1, queue_window: int = None,
+                 sequence_window: int = None, lag: int = None, is_cumsum_applied: bool = True,
+                 is_z_normalization: bool = True, is_squared_residual: bool = True, **kwargs):
         """ Highly used parameters.
 
         Args:
@@ -41,6 +49,7 @@ class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
             is_z_normalization: normalization over residual data.
         """
 
+        super().__init__(**kwargs)
         self.parameters = {
             "is_fast_parameter_selection": is_fast_parameter_selection,
             "fast_optimize_algorithm": fast_optimize_algorithm,
@@ -83,7 +92,8 @@ class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
                 lag = sequence_window // 4
                 self.parameters["lag"] = lag
         else:
-            raise NotImplementedError("Any other optimization are not implemented yet! Select is_fast_optimize = True")
+            pass
+           # raise NotImplementedError("Any other optimization are not implemented yet! Select is_fast_optimize = True")
         return self
 
     def get_distances(self, target_array: np.array) -> np.ndarray:
@@ -116,4 +126,12 @@ class ChangePointDetectionConstructor(WindowSizeSelection, Filter, Scaler):
         Returns:
             array of binary change points labels.
         """
+        ...
+
+class AnomalyDetectionConstructor(ModelConstuctor):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        ...
+
+    def get_probability(self) -> np.ndarray:
         ...

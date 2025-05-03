@@ -20,11 +20,12 @@ classes has been refactored based on implementations from ***Fedot.Industrial***
 ## Example API usage:
 
 #### №1 SingularSequenceTransformer
+
 ```Python3
 # init libs
-from models.SubspaceBased import SingularSequenceTransformer
-from data.SythData import SinusoidWaves
-from utils.Reports import SummaryReport
+from src.models.SubspaceBased import SingularSequenceTransformer
+from src.data import SinusoidWaves
+from src.utils import SummaryReport
 
 # init df
 data = SinusoidWaves(length_data=1000,
@@ -34,12 +35,12 @@ data = SinusoidWaves(length_data=1000,
 # extract target array
 target_array = data['x'].values
 
-#define some hyperparameters apriori.
+# define some hyperparameters apriori.
 model = SingularSequenceTransformer(
-        queue_window=10,
-        n_components=2,
-        is_fast_parameter_selection=True,
-        threshold_quantile_coeff=0.95).fit(x_train=list(target_array), y_train=None)
+    queue_window=10,
+    n_components=2,
+    is_fast_parameter_selection=True,
+    threshold_quantile_coeff=0.95).fit(x_train=list(target_array), y_train=None)
 
 # predict change points at target_array
 cps_pred = model.predict(target_array=target_array)
@@ -48,13 +49,13 @@ cps_pred = model.predict(target_array=target_array)
 data['cps_pred'] = cps_pred
 
 # plot results
-data.plot(figsize=(20,5))
+data.plot(figsize=(20, 5))
 
 # get scores based on initial dataframe and model results
 df_summary_report = SummaryReport().create_report(df=data,
-                              column_name_preds="cps_pred",
-                              column_name_original="CPs"
-                              )
+                                                  column_name_preds="cps_pred",
+                                                  column_name_original="CPs"
+                                                  )
 ```
 ![ExampleResults.png](ExampleResults.png)
 

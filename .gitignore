@@ -2,3 +2,7 @@
 .idea
 .ipynb_checkpoints/
 __pycache__/
+build/
+dd_cpd.egg-info/
+drilling-change-point-detection/
+drilling-change-point-detection-info/

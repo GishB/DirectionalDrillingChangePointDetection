@@ -1,4 +1,4 @@
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 from setuptools import setup, find_packages
 
@@ -32,8 +32,6 @@ setup(
         'scipy~=1.11.4',
         'matplotlib~=3.7.1',
         'requests~=2.31.0',
-        'detecta<=0.0.5'
-        'tsad==0.19.3'
     ],
     include_package_data=True,
     zip_safe=False)
