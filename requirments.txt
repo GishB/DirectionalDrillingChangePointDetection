@@ -11,3 +11,4 @@ zipp==3.21.0scikit-learn==1.6.1
 kiwisolver==1.4.8
 jsonschema==4.23.0
 click==8.1.8
+tsad

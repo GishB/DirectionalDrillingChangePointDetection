@@ -1,178 +1,7 @@
 from typing import Optional, List
 
+import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-
-
-class SythDataConstructor:
-    """ This is fundament class which should be used for any syth data generators.
-
-    Notes:
-        length_data % cpu_numbers has to be equal 0!
-
-    Attributes:
-        frequency: which freq should be used seconds, minutes, days.
-        length_data: just how many points should be generated.
-        cps_number: number of change points over generated data.
-    """
-
-    def __init__(self,
-                 white_noise_level: str = "default",
-                 frequency: str = "s",
-                 length_data: int = 24 * 7 * 15 + 15,
-                 cps_number: int = 15):
-        self.frequency = frequency
-        self.length_data = length_data
-        self.cps_number = cps_number
-
-        self.white_mean = 0
-        if white_noise_level == "default":
-            self.white_std = 0.5
-        elif white_noise_level == "max":
-            self.white_std = 1
-        elif white_noise_level == "min":
-            self.white_std = 0.01
-        else:
-            raise NameError("Not implemented white noise level!")
-
-        if length_data % cps_number != 0:
-            raise ValueError("Not equal length of data and cpu_numbers expected from syth data!")
-
-    def generate_empty_df(self) -> pd.DataFrame:
-        """ Generate dataframe with timestamps.
-
-        Returns:
-            pandas dataframe with expected frequency and length
-        """
-        return pd.DataFrame(index=pd.date_range(start="10/07/1999",
-                                                periods=self.length_data,
-                                                freq=self.frequency,
-                                                normalize=True,
-                                                inclusive="both",
-                                                name="time"))
-
-    def generate_white_noise(self) -> np.array:
-        """ Generate random noise for your data.
-
-        Returns:
-            array of white noise based on expected length of data.
-        """
-        return np.random.normal(self.white_mean,
-                                self.white_std,
-                                size=self.length_data)
-
-    def generate_array_of_change_points(self) -> np.array:
-        """ Generate values which represent CPs over syth data.
-
-        Returns:
-            numpy array of int values where 1 is change point and 0 is default value.
-        """
-        cps_index = [i for i in range(self.length_data // self.cps_number,
-                                      self.length_data,
-                                      self.length_data // self.cps_number)]
-        dp = [0 if i not in cps_index else 1 for i in range(self.length_data)]
-        return np.array(dp)
-
-    def generate_data(self) -> np.array:
-        """ Generate syth data array
-
-        Returns:
-            expected syth data based on class idea.
-        """
-        ...
-
-    def get(self) -> pd.DataFrame:
-        """ Get syth data.
-
-        Returns:
-            pandas dataframe with syth data and time index.
-        """
-        ...
-
-
-class LinearSteps(SythDataConstructor):
-    def get_linear_array(self,
-                         beta_past: float,
-                         k_past: float,
-                         beta_mutation_coeff: float,
-                         k_mutation_coeff: float) -> tuple[np.array, float, float]:
-        """ Generate random linear array based on past observation
-
-        Notes:
-            beta_mutation_coeff as well as k_mutation_coeff should be defined based on expertise. These coefficients
-            help to connect nearest arrays.
-
-        Args:
-            beta_past: beta value in the past array.
-            k_past: k coefficient in the past array.
-            beta_mutation_coeff: treshold for beta deviation.
-            k_mutation_coeff: treshold for k coeff deviation.
-
-        Returns:
-            tuple of generated data and info for this generations beta and k_coeff.
-        """
-        beta = np.random.uniform(beta_past, 1)
-        k_coeff = np.random.uniform(k_past, 1)
-        if np.random.uniform(0, 1) > beta_mutation_coeff:
-            beta = np.random.uniform(-1, 1)
-        if np.random.uniform(0, 1) > k_mutation_coeff:
-            k_coeff = np.random.uniform(-1, 1)
-        dp = [k_coeff * x + beta for x in range(0, self.length_data // self.cps_number)]
-        return np.array(dp), beta, k_coeff
-
-    def generate_data(self, initial_beta: float = -0.01,
-                      initial_k: float = 0.2,
-                      beta_mutation_coeff: float = 0.8,
-                      k_mutation_coeff: float = 0.2) -> np.array:
-        dp = []
-        for steps in range(self.cps_number):
-            temp_info = self.get_linear_array(initial_beta,
-                                              initial_k,
-                                              beta_mutation_coeff,
-                                              k_mutation_coeff)
-            dp.extend(temp_info[0])
-            initial_beta = temp_info[1]
-            initial_k = temp_info[2]
-        return np.array(dp)
-
-    def get(self):
-        df = self.generate_empty_df()
-        df['x'] = np.add(self.generate_data(), self.generate_white_noise())
-        df['CPs'] = self.generate_array_of_change_points()
-        return df
-
-
-class SinusoidWaves(SythDataConstructor):
-    def get_sinusoid_array(self, beta_past: float, beta_mutation_coeff: float) -> tuple[np.array, float]:
-        """ Generate sinusoid waves over expected shape.
-
-        Args:
-            beta_past: beta coefficient for sinus wave.
-            beta_mutation_coeff: coeff for mutation operator.
-
-        Returns:
-            array of sinusoid data
-        """
-        beta_past = np.random.uniform(low=beta_past, high=2)
-        if np.random.uniform(low=0, high=1) > beta_mutation_coeff:
-            beta_past = np.random.uniform(low=-2, high=2)
-        x = np.linspace(start=0, stop=self.length_data // self.cps_number, num=self.length_data // self.cps_number)
-        return np.sin(x) * beta_past, beta_past
-
-    def generate_data(self, initial_beta: float = 0.5, beta_mutation_coeff: float = 0.5) -> np.array:
-        dp = []
-        for steps in range(self.cps_number):
-            temp_info = self.get_sinusoid_array(initial_beta,
-                                                beta_mutation_coeff)
-            dp.extend(temp_info[0])
-            initial_beta = temp_info[1]
-        return np.array(dp)
-
-    def get(self):
-        df = self.generate_empty_df()
-        df['x'] = np.add(self.generate_data(), self.generate_white_noise())
-        df['CPs'] = self.generate_array_of_change_points()
-        return df
 
 
 class RandomChangePointsGenerator:
@@ -320,6 +149,133 @@ class RandomChangePointsGenerator:
         return self.queue(self.minimum_sequence_cp, cps_array)
 
 
+class LinearSteps(RandomChangePointsGenerator):
+    def __init__(self,
+                 length_data: int = 1000,
+                 cps_number: int = 10,
+                 noise_std: float = 0.1,
+                 min_segment_length: int = 20,
+                 **kwargs):
+        super().__init__(**kwargs)
+        self.length_data = length_data
+        self.cps_number = cps_number
+        self.noise_std = noise_std
+        self.min_segment_length = min_segment_length
+
+    def get_linear_segment(self,
+                           beta: float,
+                           k: float,
+                           segment_length: int,
+                           x_start: int = 0) -> np.array:
+        """Generate a linear segment with noise
+
+        Args:
+            beta: Intercept value
+            k: Slope value
+            segment_length: Length of the segment to generate
+            x_start: Starting x-value for continuity
+
+        Returns:
+            Generated linear segment with noise
+        """
+        x = np.arange(x_start, x_start + segment_length)
+        return k * x + beta
+
+    def generate_data(self,
+                      cps: np.array,
+                      initial_beta: float = -0.01,
+                      initial_k: float = 0.2,
+                      beta_mutation_coeff: float = 0.8,
+                      k_mutation_coeff: float = 0.2) -> np.array:
+        """Generate complete linear time series with change points
+
+        Args:
+            cps: Array of change points (1=change, 0=no change)
+            initial_beta: Starting intercept
+            initial_k: Starting slope
+            beta_mutation_coeff: Controls intercept mutation probability (0-1)
+            k_mutation_coeff: Controls slope mutation probability (0-1)
+
+        Returns:
+            Generated time series array
+        """
+        full_series = []
+        current_beta = initial_beta
+        current_k = initial_k
+        x_position = 0
+
+        # Find all change point indices
+        cp_indices = np.where(cps == 1)[0]
+        if len(cp_indices) == 0:
+            # No change points, return single segment
+            return self.get_linear_segment(current_beta, current_k, self.length_data)
+
+        # Add start to change points if not present
+        if cp_indices[0] != 0:
+            cp_indices = np.insert(cp_indices, 0, 0)
+
+        # Generate segments between change points
+        for i in range(len(cp_indices)):
+            start_idx = cp_indices[i]
+            end_idx = cp_indices[i + 1] if i + 1 < len(cp_indices) else self.length_data
+            segment_length = end_idx - start_idx
+
+            # Only mutate parameters at change points (not at start)
+            if i > 0:  # Skip first segment (uses initial values)
+                # Random walk with possible mutation
+                current_beta += np.random.normal(0, 0.1 * beta_mutation_coeff)
+                current_k += np.random.normal(0, 0.1 * k_mutation_coeff)
+
+                # Apply mutations with probability
+                if np.random.random() > beta_mutation_coeff:
+                    current_beta = np.random.uniform(-1, 1)
+                if np.random.random() > k_mutation_coeff:
+                    current_k = np.random.uniform(-1, 1)
+
+            # Generate segment
+            segment = self.get_linear_segment(
+                beta=current_beta,
+                k=current_k,
+                segment_length=segment_length,
+                x_start=x_position
+            )
+            full_series.extend(segment)
+            x_position += segment_length
+
+        return np.array(full_series)
+
+    def get(self) -> np.ndarray:
+        """Generate complete dataset with features and change points
+
+        Returns:
+            arrays of change points, noised linear signal, clean linear signal.
+        """
+        cps = self.generate_change_points_with_mutation()
+        clean_signal = self.generate_data(cps)
+        noise = np.random.normal(0, self.noise_std, self.length_data)
+        return np.array([cps, clean_signal + noise, clean_signal])
+
+    def plot(self, data=np.ndarray, title: str = "Linear Steps with Change Points"):
+        """Visualize the generated time series"""
+        if data is None:
+            data = self.get()
+
+        plt.figure(figsize=(12, 6))
+        plt.plot(data[1], label='Noisy Signal', alpha=0.7)
+        plt.plot(data[2], label='True Signal', linewidth=2)
+
+        cp_indices = np.where(data[0] == 1)[0]
+        for cp in cp_indices:
+            plt.axvline(x=cp, color='r', linestyle='--', alpha=0.5)
+
+        plt.title(title)
+        plt.xlabel('Time')
+        plt.ylabel('Value')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
+
 class SyntheticSinusoid(RandomChangePointsGenerator):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -395,6 +351,9 @@ class SyntheticSinusoid(RandomChangePointsGenerator):
             noise_std=noise_std
         )
         return np.array([random_cps_list, sinusoid_series])
+
+    def plot(self):
+        ...
 
 class SimpleRandomTimeSeries:
     def __init__(self, **kwargs):
