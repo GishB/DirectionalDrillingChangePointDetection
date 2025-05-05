@@ -3,7 +3,7 @@ from typing import Optional, Dict, Any
 import streamlit as st
 import matplotlib.pyplot as plt
 
-from src.data.SythData import LinearSteps, SinusoidWaves
+from src.data.changepoints_generators.changepoint_generators import LinearSteps, SinusoidWaves
 from src.models.SubspaceBased.SingularSequenceTransformer import SingularSequenceTransformer
 from src.models.ProbabilityBased.kalmanfilter import KalmanFilter
 from src.utils.Reports import SummaryReport

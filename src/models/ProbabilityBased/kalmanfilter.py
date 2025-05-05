@@ -168,7 +168,7 @@ class KalmanFilter(ChangePointDetectionConstructor):
 
 if __name__ == "__main__":
     from src.models.ProbabilityBased.kalmanfilter import KalmanFilter
-    from src.data.SythData import SinusoidWaves
+    from src.data.changepoints_generators.changepoint_generators import SinusoidWaves
 
     data = SinusoidWaves(length_data=1000, cps_number=5, white_noise_level="min").get()
     target_array = data['x'].values
