@@ -1,5 +1,4 @@
 from typing import Optional, List
-from src.utils.DataTransformers import Filter
 
 import numpy as np
 import pandas as pd
@@ -176,9 +175,8 @@ class SinusoidWaves(SythDataConstructor):
         return df
 
 
-class RandomChangePointsGenerator(Filter):
-    """ Default idea is to generate different change point sequences for 1D cases.
-    """
+class RandomChangePointsGenerator:
+    """Improved version that distributes change points more uniformly"""
 
     def __init__(self,
                  seed: Optional[int] = None,
@@ -192,11 +190,11 @@ class RandomChangePointsGenerator(Filter):
 
         if seed is None:
             seed = np.random.randint(low=0, high=65535)
+        np.random.seed(seed)
 
         self.seed = seed
         self.cps_number = cps_number
         self.length_data = length_data
-
         self.power_coeff = power_coeff
         self.start_mutation_coeff = start_mutation_coeff
         self.treshold_mutation_coeff = treshold_mutation_coeff
@@ -207,24 +205,14 @@ class RandomChangePointsGenerator(Filter):
             raise AttributeError(f"Change points number has to be positive! However, you set it to be {cps_number}")
 
         if length_data < 10:
-            raise NotImplementedError("This class expect to generate array with more then 10 values in a sequence!")
+            raise NotImplementedError("This class expects to generate array with more than 10 values in a sequence!")
 
-        if (length_data / (cps_number + 1e-9)) < 10:
-            raise NotImplementedError("Expected length of data is to small for expected cps_number! One of your "
-                                      "sequences could be less then 10 points which may lead to cps model errors.")
+        if (length_data / (cps_number + 1e-9)) < minimum_sequence_cp:
+            raise NotImplementedError("Expected length of data is too small for expected cps_number! One of your "
+                                      "sequences could be less than minimum_sequence_cp points which may lead to errors.")
 
     def _new_mutation_coeff(self, sequence_len: int) -> float:
-        """ Generate random float value between 0 and 1.
-
-        Notes:
-            we use it to update mutation coefficient.
-
-        Arg:
-            sequence_len: len of sequence from the last change points.
-
-        Returns:
-            float value
-        """
+        """Generate random float value between 0 and 1."""
         if sequence_len ** self.power_coeff > self.length_data:
             out = np.random.random() - self.treshold_mutation_coeff
         else:
@@ -232,112 +220,185 @@ class RandomChangePointsGenerator(Filter):
         return out
 
     def _is_mutation_apply(self, sequence_len: int, past_mutation_coeff: float) -> bool:
-        """ Should we apply mutation factor
-
-        Notes:
-            if true then we apply mutation.
-
-        Arg:
-            sequence_len: len of sequence from the last change points.
-            past_mutation_coeff: coefficient which we use for mutation logic.
-
-        Returns:
-            boolean value
-        """
-        out = False
+        """Determine if we should apply mutation factor"""
         if sequence_len > self.minimum_sequence_cp:
-            if np.random.random() > past_mutation_coeff:
-                out = True
-        return out
+            # Adjust probability based on position in sequence to encourage uniform distribution
+            position_factor = sequence_len / self.length_data
+            adjusted_prob = past_mutation_coeff * (1 + position_factor)
+            return np.random.random() > adjusted_prob
+        return False
 
-    def generate_change_points_with_random(self, cps_array: Optional[np.array] = None) -> np.array:
-        """ Generate change points based on random numpy function.
+    def queue(self, queue_window: int, time_series: np.array) -> np.array:
+        """Ensure minimum distance between change points"""
+        cp_indices = np.where(time_series == 1)[0]
+        for i in range(1, len(cp_indices)):
+            if cp_indices[i] - cp_indices[i - 1] < queue_window:
+                # Remove the latter change point if too close
+                time_series[cp_indices[i]] = 0
+        return time_series
 
-        Notes:
-            1. By default, this function helps to generate all change points
-             in case of any failure from mutation function.
-            2. You can simply use this function to generate you own change points based on random indx.
-            3. Here you might see queue filter which helps to filter change point distance.
+    def generate_uniform_change_points(self) -> np.array:
+        """Generate change points with more uniform distribution"""
+        cps_array = np.zeros(self.length_data)
 
-        Args:
-            cps_array: array of change points or just none if you generate a new one.
+        if self.cps_number == 0:
+            return cps_array
 
-        Returns:
-            array of change points.
-        """
-        if cps_array is None:
-            cps_array: np.array = np.zeros(shape=self.length_data)
-        count_cps = sum(cps_array)
-        attempts: int = 0
-        while count_cps < self.cps_number:
-            random_cp_index = np.random.randint(size=self.cps_number, low=5, high=self.length_data-5)
-            cps_array[random_cp_index] = 1
-            cps_array = self.queue(queue_window=self.minimum_sequence_cp, time_series=cps_array)
-            count_cps += sum(cps_array)
-            attempts += 1
-            if attempts > self.attemps_to_failure:
-                break
-        if attempts >= self.attemps_to_failure:
-            raise NotImplementedError("Failure to generate random change points due unexpected behaviour! "
-                                      f"Try to set other init params or increase sequence length: "
-                                      f"cps_number = {self.cps_number} |"
-                                      f" minimum_sequence_cp: {self.minimum_sequence_cp}")
+        # Calculate ideal spacing between change points
+        ideal_spacing = self.length_data / (self.cps_number + 1)
+
+        # Generate initial positions with some randomness
+        positions = [int(i + 1 + np.random.uniform(-0.3, 0.3)) * ideal_spacing for i in range(self.cps_number)]
+        positions = np.clip(positions, self.minimum_sequence_cp, self.length_data - self.minimum_sequence_cp)
+
+        # Convert to integers and ensure uniqueness
+        positions = np.unique(np.round(positions).astype(int))
+
+        # If we didn't get enough points, add more randomly
+        while len(positions) < self.cps_number:
+            new_pos = np.random.randint(self.minimum_sequence_cp,
+                                        self.length_data - self.minimum_sequence_cp)
+            if np.min(np.abs(positions - new_pos)) > self.minimum_sequence_cp:
+                positions = np.append(positions, new_pos)
+
+        # Ensure minimum distance
+        positions.sort()
+        for i in range(1, len(positions)):
+            if positions[i] - positions[i - 1] < self.minimum_sequence_cp:
+                positions[i] = positions[i - 1] + self.minimum_sequence_cp
+
+        cps_array[positions] = 1
         return cps_array
 
     def generate_change_points_with_mutation(self) -> np.array:
-        """ Main function to generate array of change points.
+        """Main function to generate array of change points with uniform distribution"""
+        # First try uniform generation
+        cps_array = self.generate_uniform_change_points()
 
-        Notes:
-            Baseline idea is to generate change points based on mutation coefficient.
+        # If we didn't get enough points, fall back to random
+        if sum(cps_array) < self.cps_number:
+            attempts = 0
+            while sum(cps_array) < self.cps_number and attempts < self.attemps_to_failure:
+                pos = np.random.randint(self.minimum_sequence_cp,
+                                        self.length_data - self.minimum_sequence_cp)
+                # Check distance from existing points
+                existing = np.where(cps_array == 1)[0]
+                if len(existing) == 0 or np.min(np.abs(existing - pos)) > self.minimum_sequence_cp:
+                    cps_array[pos] = 1
+                attempts += 1
 
-        Returns:
-            array of change points
-        """
-        cps_array: np.array = np.zeros(shape=self.length_data)
-        cps_counter: int = 0
-        counter_sequence_len: int = 0
-        indx: int = 0
-        past_mutation_coeff = self.start_mutation_coeff
-        while indx < (self.length_data - 5):
-            if cps_counter >= self.cps_number:
-                break
-            is_cp: bool = False
-            if indx >= 5:
-                is_cp: bool = self._is_mutation_apply(counter_sequence_len, past_mutation_coeff)
-            if is_cp:
-                past_mutation_coeff = self._new_mutation_coeff(counter_sequence_len)
-                cps_array[indx] = 1
-                cps_counter += 1
-                counter_sequence_len = 0
-            else:
-                counter_sequence_len += 1
-            indx += 1
-        if cps_counter < self.cps_number:
-            cps_array = self.generate_change_points_with_random(cps_array)
-        else:
-            cps_array = self.queue(queue_window=self.minimum_sequence_cp,
-                                   time_series=cps_array)
+        # Final check and queue filtering
+        cps_array = self.queue(self.minimum_sequence_cp, cps_array)
+
+        if sum(cps_array) < self.cps_number:
+            print(f"Warning: Only generated {sum(cps_array)} change points out of requested {self.cps_number}")
+
         return cps_array
 
+    def generate_change_points_with_random(self, cps_array: Optional[np.array] = None) -> np.array:
+        """Alternative method using random generation with uniform distribution"""
+        if cps_array is None:
+            cps_array = np.zeros(self.length_data)
 
-class SimpleRandomTimeSeries(RandomChangePointsGenerator):
+        positions = []
+        attempts = 0
+
+        while len(positions) < self.cps_number and attempts < self.attemps_to_failure:
+            # Try to place points in different segments
+            segment_size = self.length_data / (self.cps_number + 1)
+            new_pos = int(np.random.uniform(len(positions) * segment_size,
+                                            (len(positions) + 1) * segment_size))
+
+            new_pos = np.clip(new_pos, self.minimum_sequence_cp, self.length_data - self.minimum_sequence_cp)
+
+            # Check minimum distance
+            if len(positions) == 0 or np.min(np.abs(np.array(positions) - new_pos)) > self.minimum_sequence_cp:
+                positions.append(new_pos)
+            attempts += 1
+
+        cps_array[np.array(positions)] = 1
+        return self.queue(self.minimum_sequence_cp, cps_array)
+
+
+class SyntheticSinusoid(RandomChangePointsGenerator):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def generate_data(self, cps_list: List[int], min_max_val: int, min_max_std: int) -> List[float]:
-        linear_val = np.random.randint(0, min_max_val)
-        std = np.random.randint(0, min_max_std)
-        linear_steps = [0 for x in cps_list]
-        for ind, tmp_val in enumerate(cps_list):
-            if tmp_val != 0:
-                linear_val = np.random.randint(-min_max_val, min_max_val)
-                std = np.random.randint(0, min_max_std)
-            linear_steps[ind] = np.random.normal(loc=linear_val, scale=std, size=1)[0]
-        return np.array(linear_steps)
+    def generate_data(self, cps_list: List[int],
+                      min_max_amplitude: float,
+                      min_max_frequency: float,
+                      min_max_phase: float,
+                      noise_std: float) -> List[float]:
+        """
+        Generate sinusoidal data with change points
+
+        Parameters:
+        - cps_list: List of change point indices (0 = no change, 1 = change)
+        - min_max_amplitude: Tuple of (min, max) amplitude range
+        - min_max_frequency: Tuple of (min, max) frequency range
+        - min_max_phase: Tuple of (min, max) phase shift range
+        - noise_std: Standard deviation of Gaussian noise to add
+
+        Returns:
+        - List of sinusoidal values with change points
+        """
+        time_points = len(cps_list)
+        t = np.arange(time_points)
+
+        # Initialize parameters
+        amplitude = np.random.uniform(min_max_amplitude[0], min_max_amplitude[1])
+        frequency = np.random.uniform(min_max_frequency[0], min_max_frequency[1])
+        phase = np.random.uniform(min_max_phase[0], min_max_phase[1])
+
+        sinusoid = []
+
+        for i in range(time_points):
+            # Check for change point
+            if cps_list[i] == 1:
+                amplitude = np.random.uniform(min_max_amplitude[0], min_max_amplitude[1])
+                frequency = np.random.uniform(min_max_frequency[0], min_max_frequency[1])
+                phase = np.random.uniform(min_max_phase[0], min_max_phase[1])
+
+            # Generate sinusoidal value
+            value = amplitude * np.sin(2 * np.pi * frequency * t[i] + phase)
+
+            # Add noise
+            value += np.random.normal(0, noise_std)
+
+            sinusoid.append(value)
+
+        return np.array(sinusoid)
+
+    def get(self,
+            min_max_amplitude: float = (0.5, 5.0),
+            min_max_frequency: float = (0.01, 0.9),
+            min_max_phase: float = (-2 * np.pi, 2 * np.pi),
+            noise_std: float = 0.1) -> np.array:
+        """
+        Generate complete sinusoidal time series with change points
+
+        Parameters:
+        - min_max_amplitude: Amplitude range (default 0.5-2.0)
+        - min_max_frequency: Frequency range (default 0.01-0.1)
+        - min_max_phase: Phase shift range (default 0-2π)
+        - noise_std: Noise standard deviation (default 0.1)
+
+        Returns:
+        - np.array: [change_points_list, time_series_data]
+        """
+        random_cps_list = self.generate_change_points_with_mutation()
+        sinusoid_series = self.generate_data(
+            cps_list=random_cps_list,
+            min_max_amplitude=min_max_amplitude,
+            min_max_frequency=min_max_frequency,
+            min_max_phase=min_max_phase,
+            noise_std=noise_std
+        )
+        return np.array([random_cps_list, sinusoid_series])
+
+class SimpleRandomTimeSeries:
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def get(self, min_max_val: int, min_max_std: int) -> np.array:
-        random_cps_list = self.generate_change_points_with_mutation()
-        random_time_series = self.generate_data(cps_list=random_cps_list,
-                                                min_max_val=min_max_val,
-                                                min_max_std=min_max_std)
-        return np.array([random_cps_list, random_time_series])
+        raise NotImplementedError("In a progress! Here you will create random timeseries from box")
