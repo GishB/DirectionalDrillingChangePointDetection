@@ -1,5 +1,5 @@
 import numpy as np
-from src.models.ProbabilityBased.kalmanfilter import KalmanFilter
+from driller.models.ProbabilityBased.kalmanfilter import KalmanFilter
 
 
 class TestKalmanFilter:

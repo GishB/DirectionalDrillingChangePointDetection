@@ -9,7 +9,7 @@ class RandomChangePointsGenerator:
 
     def __init__(self,
                  seed: Optional[int] = None,
-                 cps_number: int = 0,
+                 cps_number: int = 1,
                  length_data: int = 24 * 7 * 15 + 15,
                  minimum_sequence_cp: int = 10,
                  start_mutation_coeff: float = 0.5,

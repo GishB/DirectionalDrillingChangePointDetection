@@ -1,6 +1,4 @@
-import numpy as np
-from typing import Optional
-from src.models.ModelConstructors import ChangePointDetectionConstructor
+from src.driller.models.ModelConstructors import ChangePointDetectionConstructor
 
 class ClaSP(ChangePointDetectionConstructor):
     """ Basic class to work with ChangePoint detection models.

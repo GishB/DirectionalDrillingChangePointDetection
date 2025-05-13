@@ -2,7 +2,7 @@ from typing import Tuple
 import numpy as np
 from scipy.signal import find_peaks
 from scipy.linalg import hankel
-from src.models.ModelConstructors import ChangePointDetectionConstructor
+from src.driller.models.ModelConstructors import ChangePointDetectionConstructor
 
 
 class SingularSequenceTransformer(ChangePointDetectionConstructor):
@@ -201,10 +201,11 @@ class SingularSequenceTransformer(ChangePointDetectionConstructor):
 
 
 if __name__ == "__main__":
-    from src.data.changepoints_generators.changepoint_generators import SinusoidWaves
+    import driller
+    from driller.data.changepoints_generators.changepoint_generators import SyntheticSinusoid
 
-    data = SinusoidWaves(length_data=2000, cps_number=4, white_noise_level="min").get()
-    target_array = data['x'].values
+    data = SyntheticSinusoid(length_data=2000, cps_number=4, white_noise_level="min").get()
+    target_array = data[1]
     model = SingularSequenceTransformer(
                                         sequence_window=32,
                                         lag=5,

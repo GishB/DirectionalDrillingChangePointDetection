@@ -5,8 +5,8 @@ import numpy as np
 
 from typing import Optional
 
-from src.utils.DataTransformers import Filter, Scaler
-from src.optimization.WSSAlgorithms import WindowSizeSelection
+from src.driller.utils.DataTransformers import Filter, Scaler
+from src.driller.optimization.WSSAlgorithms import WindowSizeSelection
 
 
 class ModelConstuctor:

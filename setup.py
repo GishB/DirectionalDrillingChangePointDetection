@@ -11,7 +11,7 @@ with open('README.md', 'r', encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='dd_cpd',
+    name='driller',
     version=__version__,
     python_requires='>=3.10.0',
     url='https://github.com/GishB/DirectionalDrillingChangePointDetection',
@@ -21,15 +21,16 @@ setup(
     description='Time Series Change Point Detection for Directional Drilling Optimization',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    packages=find_packages(exclude=[
-        'tests*',
-        'experiments*',
-        'docs*',
-        '.*',
-        '*.egg-info',
-        'build*',
-        'dist*'
-    ]),
+    package_dir={'': 'src'},
+    packages=find_packages(where="src", exclude=[
+            'tests*',
+            'experiments*',
+            'docs*',
+            '.*',
+            '*.egg-info',
+            'build*',
+            'dist*'
+        ]),
     install_requires=requirements,
     include_package_data=True,
     zip_safe=False,

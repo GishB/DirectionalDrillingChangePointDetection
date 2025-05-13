@@ -3,10 +3,10 @@ from typing import Optional, Dict, Any
 import streamlit as st
 import matplotlib.pyplot as plt
 
-from src.data.changepoints_generators.changepoint_generators import LinearSteps, SinusoidWaves
-from src.models.SubspaceBased.SingularSequenceTransformer import SingularSequenceTransformer
-from src.models.ProbabilityBased.kalmanfilter import KalmanFilter
-from src.utils.Reports import SummaryReport
+from src.driller.data.changepoints_generators.changepoint_generators import LinearSteps, SinusoidWaves
+from src.driller.models.SubspaceBased.SingularSequenceTransformer import SingularSequenceTransformer
+from src.driller.models.ProbabilityBased.kalmanfilter import KalmanFilter
+from src.driller.utils.Reports import SummaryReport
 
 target_column_value_name = "x"
 original_cps_name = "CPs"

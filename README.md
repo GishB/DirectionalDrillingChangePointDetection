@@ -14,26 +14,26 @@ classes has been refactored based on implementations from ***Fedot.Industrial***
 
 ## To set up local project dependencies:
 ```commandline
-    python3 setup.py build
+    pip install -e .
 ```
+Now you can import package and use it at your code!
 
 ## Example API usage:
 
 #### №1 SingularSequenceTransformer
 
 ```Python3
-# init libs
-from src.models.SubspaceBased import SingularSequenceTransformer
-from src.data import SinusoidWaves
-from src.utils import SummaryReport
+# init library
+import driller
+from driller.models.SubspaceBased import SingularSequenceTransformer
+from driller.data.changepoints_generators.changepoint_generators import SyntheticSinusoid
+from driller.utils import SummaryReport
 
-# init df
-data = SinusoidWaves(length_data=1000,
-                     cps_number=20,
-                     white_noise_level="min").get()
+# generate data
+data = SyntheticSinusoid(length_data=2000, cps_number=4).get()
 
 # extract target array
-target_array = data['x'].values
+target_array = data[1]
 
 # define some hyperparameters apriori.
 model = SingularSequenceTransformer(

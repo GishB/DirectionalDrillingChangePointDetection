@@ -3,6 +3,6 @@
 .ipynb_checkpoints/
 __pycache__/
 build/
-dd_cpd.egg-info/
+driller.egg-info/
 drilling-change-point-detection/
 drilling-change-point-detection-info/
