@@ -1,5 +1,5 @@
 import numpy as np
-from models.ModelConstructors import ChangePointDetectionConstructor
+from src.driller.models.ModelConstructors import ChangePointDetectionConstructor
 
 
 class KalmanFilter(ChangePointDetectionConstructor):
@@ -167,8 +167,8 @@ class KalmanFilter(ChangePointDetectionConstructor):
 
 
 if __name__ == "__main__":
-    from models.ProbabilityBased import KalmanFilter
-    from data.SythData import SinusoidWaves
+    from src.driller.models.ProbabilityBased.kalmanfilter import KalmanFilter
+    from src.driller.data.changepoints_generators.changepoint_generators import SinusoidWaves
 
     data = SinusoidWaves(length_data=1000, cps_number=5, white_noise_level="min").get()
     target_array = data['x'].values

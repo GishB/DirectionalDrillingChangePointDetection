@@ -1,4 +1,8 @@
-./venv
+.venv
 .idea
 .ipynb_checkpoints/
 __pycache__/
+build/
+driller.egg-info/
+drilling-change-point-detection/
+drilling-change-point-detection-info/

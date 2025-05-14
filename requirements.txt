@@ -1,0 +1,14 @@
+pandas~=1.5.3
+torch~=2.6.0
+pytest~=8.1.1
+numpy~=1.25.0
+scipy~=1.11.4
+matplotlib~=3.7.5
+requests~=2.31.0
+detecta<=0.0.5
+flake8~=7.0.0
+zipp==3.21.0
+scikit-learn==1.6.1
+kiwisolver==1.4.8
+jsonschema==4.23.0
+click==8.1.8

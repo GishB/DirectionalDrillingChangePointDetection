@@ -1,39 +1,55 @@
-__version__ = "0.0.1"
-
 from setuptools import setup, find_packages
 
+__version__ = "0.0.2"
+
+# Read requirements from requirements.txt
+with open('requirements.txt') as f:
+    requirements = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+
+# Read long description from README.md
+with open('README.md', 'r', encoding='utf-8') as f:
+    long_description = f.read()
+
 setup(
-    name='dd_cpd',
+    name='driller',
     version=__version__,
     python_requires='>=3.10.0',
     url='https://github.com/GishB/DirectionalDrillingChangePointDetection',
     license='GNU GPLv3',
-    packages=find_packages(exclude=[
-        'tests',
-        'experiments',
-        '.github',
-        '.git',
-        '__pycache__',
-        '.pytest_cache',
-        '.idea',
-        '.git',
-        'gitattributes'
-                                    ]),
     author='Aleksandr Samofalov',
     author_email='SamofalovWORK@yandex.ru',
-    description='Time Series Change Point Detection '
-                'to increase perfomance of Directional Drilling Processes at Oil and Gas Fields',
-    long_description=open('./README.md').read(),
-    install_requires=[
-        'pandas~=1.5.3',
-        'pytest~=8.1.1',
-        'numpy~=1.25.0',
-        'streamlit<=1.31.0',
-        'scipy~=1.11.4',
-        'matplotlib~=3.7.1',
-        'requests~=2.31.0',
-        'detecta<=0.0.5'
-        'tsad==0.19.3'
-    ],
+    description='Time Series Change Point Detection for Directional Drilling Optimization',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
+    package_dir={'': 'src'},
+    packages=find_packages(where="src", exclude=[
+            'tests*',
+            'experiments*',
+            'docs*',
+            '.*',
+            '*.egg-info',
+            'build*',
+            'dist*'
+        ]),
+    install_requires=requirements,
     include_package_data=True,
-    zip_safe=False)
+    zip_safe=False,
+    classifiers=[
+        'Development Status :: 3 - Alpha',
+        'Intended Audience :: Science/Research',
+        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+        'Programming Language :: Python :: 3.10',
+        'Topic :: Scientific/Engineering :: Information Analysis',
+        'Operating System :: OS Ubuntu 2022 TLS',
+    ],
+    project_urls={
+        'Bug Reports': 'https://github.com/GishB/DirectionalDrillingChangePointDetection/issues',
+        'Source': 'https://github.com/GishB/DirectionalDrillingChangePointDetection',
+    },
+    keywords=[
+        'oil and gas',
+        'change point detection',
+        'directional drilling',
+        'time series analysis'
+    ],
+)

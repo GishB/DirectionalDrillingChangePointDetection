@@ -1,12 +1,10 @@
 import sys
 import os
-sys.path.append(os.path.abspath("../.."))
+sys.path.append(os.path.abspath("../../../.."))
 
-from utils import libs_cpd, Reports as crtest
-import data.CloudData as dtest
-import models.ProbabilityBased as kalman
-import utils.GeneralFunctions as optf
-
+from src.driller.utils import libs_cpd
+from src.driller.utils import Reports as crtest
+from src.driller import utils as optf, models as kalman, data as dtest
 
 if len(sys.argv) > 1:
     i =  dtest.list_links[int(sys.argv[1])];

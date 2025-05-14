@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.linalg import hankel
-from models.SubspaceBased import SingularSequenceTransformer
+from driller.models.SubspaceBased.SingularSequenceTransformer import SingularSequenceTransformer
 
 
 class TestSingularSequenceTransformer:
