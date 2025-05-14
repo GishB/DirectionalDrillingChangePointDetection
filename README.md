@@ -1,16 +1,17 @@
 # Time-Series Change Point Detection models for Oil and Gas Industries.
 
-#### version: 0.0.1
-- Syth data generator as well as real data available at data dir.
+#### version: 0.0.2
+- Syth data generator classes as well as real data available at data dir.
+- Examples to create a lot of syth data for experiments at JupyterNotebook.
 - Refactored models based on KalmanFilter and Singular Value Decomposition technique avalable at model dir.
 - Custom fast optimization based on heuristics methods.
-- Streamlit example app at examples dir.
+- BERT-Like transformer trained for Change Point Detection task (over syth data ~ 20 GB)
 
 #### Notes:
  - Most of the implemented idea/code based on my master thesis. SingularSequenceTransformation and WindowSizeSearch 
 optimization 
 classes has been refactored based on implementations from ***Fedot.Industrial*** legacy.
- - To score change point detection models functions from ***TSAD*** lib has been used\adopted.
+ - To score change point detection models functions from ***TSAD*** lib has been used\adopted ( --no-deps import for tsad).
 
 ## To set up local project dependencies:
 ```commandline
@@ -64,11 +65,12 @@ TO DO:
 1. Docker images to reproduce examples.
 2. CPD significant checker based on queue distance algorithm and statistical information for each subsequcnes.
 3. Hybrid model based on master thesis.
-4. Some more optimization hyperparameters algorithms.
+4. Some more optimization hyperparameters algorithms (ClaSP on the way up)
 5. default notebook examples for each model.
 6. FastAPI service for end-to-end use in container.
-7. Advanced change point detection models based on 
-8. More tests.
+7. Advanced change point detection models based on Transformers (something like AnomalyBERT)
+8. More tests to check lib API.
+9. Comparable results over different models for large syth data (over 1.5 files 20 GB size)
 
 [//]: # (Here you find notebooks with Change Point Detection methods in Petroleum Data. Mainly I focus to experiment with Fedot.Industrial library.)
 
